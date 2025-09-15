@@ -14,6 +14,8 @@
 <body>
     <div class="container">
         <h1>Meeting Room Booking</h1>
+        <p>Scan the QR code on the door to book a slot.</p>
+        
         <div id="qr-container">
             <div id="qrcode"></div>
         </div>
@@ -26,17 +28,23 @@
                     <input type="time" id="start-time" name="start-time" required>
                 </div>
                 <div class="form-group">
-                    <label for="end-time">End Time:</label>
-                    <input type="time" id="end-time" name="end-time" required>
+                    <label for="duration">Duration:</label>
+                    <select id="duration">
+                        <option value="30">30 minutes</option>
+                        <option value="60">1 hour</option>
+                        <option value="90">1 hour 30 mins</option>
+                        <option value="120">2 hours</option>
+                    </select>
                 </div>
-                <button id="book-custom-btn">Check Availability & Book</button>
+                <button id="book-time-btn">Book Selected Time</button>
             </div>
         </div>
 
         <div class="booked-times-section">
             <h2>Today's Booked Times</h2>
             <div id="booked-times-list" class="time-slots">
-                </div>
+                <p>Loading bookings...</p>
+            </div>
         </div>
     </div>
 
