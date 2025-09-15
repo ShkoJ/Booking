@@ -10,28 +10,28 @@
 <body>
     <div class="container">
         <h1>Meeting Room Booking</h1>
-        <p id="success-message" class="hidden-message">Booking confirmed</p>
-     </div>
 
-        <div class="booking-options-section">
-            <h2>Select a Time Slot</h2>
-            <div class="time-selectors">
-                <div class="form-group">
-                    <label for="start-time">Start Time:</label>
-                    <select id="start-time" class="time-select"></select>
+        <div class="content-wrapper">
+            <div class="booking-options-section">
+                <h2>Select a Time Slot</h2>
+                <div class="time-selectors">
+                    <div class="form-group">
+                        <label for="start-time">Start Time:</label>
+                        <select id="start-time" class="time-select"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="end-time">End Time:</label>
+                        <select id="end-time" class="time-select"></select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="end-time">End Time:</label>
-                    <select id="end-time" class="time-select"></select>
-                </div>
+                <button id="check-availability-btn" class="book-btn">Check Availability & Book</button>
             </div>
-            <button id="check-availability-btn" class="book-btn">Check Availability & Book</button>
-        </div>
 
-        <div class="booked-times-section">
-            <h2>Today's Booked Times</h2>
-            <div id="booked-times-list" class="time-slots">
-                <p>Loading bookings...</p>
+            <div class="booked-times-section">
+                <h2>Today's Booked Times</h2>
+                <div id="booked-times-list" class="time-slots">
+                    <p>Loading bookings...</p>
+                </div>
             </div>
         </div>
     </div>
@@ -61,5 +61,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
-
