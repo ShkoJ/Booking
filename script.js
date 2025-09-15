@@ -79,18 +79,18 @@ document.addEventListener('DOMContentLoaded', () => {
             bookedTimesList.style.textAlign = 'center';
             return;
         }
-        
+
         bookings.sort((a, b) => a.startTime.localeCompare(b.startTime));
-        
+
         bookings.forEach(booking => {
             const bookedSlot = document.createElement('div');
             bookedSlot.classList.add('booked-slot');
-            
+
             // Check if the booking is "Done" and apply a class
             if (isBookingDone(booking.endTime)) {
                 bookedSlot.classList.add('done');
             }
-            
+
             bookedSlot.innerHTML = `
                 <div>
                     <strong>${booking.startTime} - ${booking.endTime}</strong>
@@ -101,20 +101,20 @@ document.addEventListener('DOMContentLoaded', () => {
             bookedTimesList.appendChild(bookedSlot);
         });
     };
-    
+
     // --- Check for Time Overlaps ---
     const checkOverlap = (bookings, newStart, newEnd) => {
         const newStartMinutes = timeToMinutes(newStart);
         const newEndMinutes = timeToMinutes(newEnd);
-        
+
         return bookings.some(booking => {
             const existingStartMinutes = timeToMinutes(booking.startTime);
             const existingEndMinutes = timeToMinutes(booking.endTime);
-            
+
             return (newStartMinutes < existingEndMinutes) && (newEndMinutes > existingStartMinutes);
         });
     };
-    
+
     // --- Real-time Firestore Listener (with filter) ---
     const todayDate = getTodayDate();
     bookingsCollection.where('date', '==', todayDate).onSnapshot(querySnapshot => {
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("Error fetching documents: ", error);
         bookedTimesList.textContent = "Failed to connect to the database.";
     });
-    
+
     // --- Handle Custom Time Booking Button Click ---
     bookCustomBtn.addEventListener('click', async () => {
         const customStartTime = startTimeInput.value;
@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Please select both a start and end time.');
             return;
         }
-        
+
         if (customStartTime >= customEndTime) {
             alert('End time must be after start time.');
             return;
@@ -214,9 +214,25 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     };
-    
+
     generateQRCode();
-    });
+    flatpickr(startTimeInput, {
+  enableTime: true,
+  noCalendar: true,
+  dateFormat: "H:i",
+  time_24hr: true,
+  minuteIncrement: 5,
+  defaultDate: new Date(),
+  disableMobile: true // This is the key line
 });
 
-
+flatpickr(endTimeInput, {
+  enableTime: true,
+  noCalendar: true,
+  dateFormat: "H:i",
+  time_24hr: true,
+  minuteIncrement: 5,
+  defaultDate: new Date(),
+  disableMobile: true // And this one
+});
+});
