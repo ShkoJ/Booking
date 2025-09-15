@@ -25,13 +25,22 @@
         <div class="booking-options-section">
             <h2>Book a Time Slot</h2>
             <div class="custom-form">
-                <div class="form-group">
-                    <label for="start-time">Start Time:</label>
-                    <input type="text" id="start-time" name="start-time" placeholder="Select start time" required>
+                <div class="form-group time-select-group">
+                  <label>Start Time (24h)</label>
+                  <div class="time-picker">
+                    <select id="start-hour" class="time-select hour-select" aria-label="Start hour"></select>
+                    <span class="colon">:</span>
+                    <select id="start-minute" class="time-select minute-select" aria-label="Start minute"></select>
+                  </div>
                 </div>
-                <div class="form-group">
-                    <label for="end-time">End Time:</label>
-                    <input type="text" id="end-time" name="end-time" placeholder="Select end time" required>
+                
+                <div class="form-group time-select-group">
+                  <label>End Time (24h)</label>
+                  <div class="time-picker">
+                    <select id="end-hour" class="time-select hour-select" aria-label="End hour"></select>
+                    <span class="colon">:</span>
+                    <select id="end-minute" class="time-select minute-select" aria-label="End minute"></select>
+                  </div>
                 </div>
                 <button id="book-custom-btn">Check Availability & Book</button>
             </div>
@@ -69,3 +78,4 @@
     <script src="script.js"></script>
 </body>
 </html>
+
