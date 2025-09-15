@@ -216,24 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     generateQRCode();
-    flatpickr(startTimeInput, {
-  enableTime: true,
-  noCalendar: true,
-  dateFormat: "H:i",
-  time_24hr: true,
-  minuteIncrement: 5,
-  defaultDate: new Date(),
-  disableMobile: true // This is the key line
+    });
 });
 
-flatpickr(endTimeInput, {
-  enableTime: true,
-  noCalendar: true,
-  dateFormat: "H:i",
-  time_24hr: true,
-  minuteIncrement: 5,
-  defaultDate: new Date(),
-  disableMobile: true // And this one
-});
-});
 
