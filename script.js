@@ -1,15 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Firebase Configuration
+    // Firebase Configuration - REPLACE WITH YOUR NEW CONFIG
     const firebaseConfig = {
-        apiKey: "AIzaSyDXeCkURGT8KfV2HJAGMy0JNkhI77gHUrg",
-        authDomain: "booking-system-44d82.firebaseapp.com",
-        projectId: "booking-system-44d82",
-        storageBucket: "booking-system-44d82.firebasestorage.app",
-        messagingSenderId: "679563424883",
-        appId: "1:679563424883:web:51847672edf3d1ef1e2606",
-        measurementId: "G-VGC5ZWVG5G"
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+        appId: "YOUR_APP_ID",
+        measurementId: "YOUR_MEASUREMENT_ID"
     };
-    
+
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
