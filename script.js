@@ -1,15 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // ** IMPORTANT: Replace with your actual Firebase project config **
+    // ** Your Actual Firebase Configuration **
     const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_PROJECT_ID.appspot.com",
-        messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-        appId: "YOUR_APP_ID",
-        measurementId: "YOUR_MEASUREMENT_ID"
+      apiKey: "AIzaSyC4YfTWe9eLhPZs4LBTErkLW-boINPwfAY",
+      authDomain: "booking-fe2ea.firebaseapp.com",
+      projectId: "booking-fe2ea",
+      storageBucket: "booking-fe2ea.firebasestorage.app",
+      messagingSenderId: "532325286601",
+      appId: "1:532325286601:web:4fc3c64c70cf70c60c8318",
+      measurementId: "G-VJ6KKNZZ82"
     };
-    
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
@@ -18,9 +18,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalTimeSlot = document.getElementById('modal-time-slot');
     const bookingForm = document.getElementById('booking-form');
     const closeBtn = document.querySelector('.close-btn');
-    const bookTimeBtn = document.getElementById('book-time-btn');
+    const bookCustomBtn = document.getElementById('book-custom-btn');
     const startTimeInput = document.getElementById('start-time');
-    const durationSelect = document.getElementById('duration');
+    const endTimeInput = document.getElementById('end-time');
 
     const bookingsCollection = db.collection('bookings');
 
@@ -39,7 +39,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // Sort bookings by start time
         bookings.sort((a, b) => a.startTime.localeCompare(b.startTime));
         
         bookings.forEach(booking => {
@@ -78,36 +77,33 @@ document.addEventListener('DOMContentLoaded', () => {
         bookedTimesList.textContent = "Failed to connect to the database.";
     });
     
-    // --- Handle Booking Button Click ---
-    bookTimeBtn.addEventListener('click', async () => {
-        const startTime = startTimeInput.value;
-        const duration = parseInt(durationSelect.value, 10);
+    // --- Handle Custom Time Booking Button Click ---
+    bookCustomBtn.addEventListener('click', async () => {
+        const customStartTime = startTimeInput.value;
+        const customEndTime = endTimeInput.value;
 
-        if (!startTime) {
-            alert('Please select a start time.');
+        if (!customStartTime || !customEndTime) {
+            alert('Please select both a start and end time.');
             return;
         }
 
-        const startMinutes = timeToMinutes(startTime);
-        const endMinutes = startMinutes + duration;
-        
-        // Convert back to HH:MM format
-        const endHour = Math.floor(endMinutes / 60) % 24;
-        const endMinute = endMinutes % 60;
-        const endTime = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+        if (customStartTime >= customEndTime) {
+            alert('End time must be after start time.');
+            return;
+        }
 
         const snapshot = await bookingsCollection.get();
         const currentBookings = snapshot.docs.map(doc => doc.data());
 
-        if (checkOverlap(currentBookings, startTime, endTime)) {
-            alert('This time slot overlaps with an existing booking. Please choose another time.');
+        if (checkOverlap(currentBookings, customStartTime, customEndTime)) {
+            alert('This time range overlaps with an existing booking. Please choose another time.');
             return;
         }
 
-        modalTimeSlot.textContent = `Time: ${startTime} - ${endTime}`;
+        modalTimeSlot.textContent = `Time: ${customStartTime} - ${customEndTime}`;
         modal.style.display = 'flex';
-        bookingForm.dataset.startTime = startTime;
-        bookingForm.dataset.endTime = endTime;
+        bookingForm.dataset.startTime = customStartTime;
+        bookingForm.dataset.endTime = customEndTime;
     });
 
     // --- Handle Booking Confirmation from Modal ---
