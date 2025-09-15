@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // ** Your Actual Firebase Configuration **
+    // ** IMPORTANT: Replace with your actual Firebase project config **
     const firebaseConfig = {
       apiKey: "AIzaSyC4YfTWe9eLhPZs4LBTErkLW-boINPwfAY",
       authDomain: "booking-fe2ea.firebaseapp.com",
@@ -19,10 +19,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const bookingForm = document.getElementById('booking-form');
     const closeBtn = document.querySelector('.close-btn');
     const bookCustomBtn = document.getElementById('book-custom-btn');
-    const startTimeInput = document.getElementById('start-time');
-    const endTimeInput = document.getElementById('end-time');
+    const startHourSelect = document.getElementById('start-hour');
+    const startMinuteSelect = document.getElementById('start-minute');
+    const endHourSelect = document.getElementById('end-hour');
+    const endMinuteSelect = document.getElementById('end-minute');
 
     const bookingsCollection = db.collection('bookings');
+
+    // --- Populate Hour and Minute Dropdowns ---
+    const populateTimePickers = () => {
+        for (let i = 0; i < 24; i++) {
+            const hour = String(i).padStart(2, '0');
+            startHourSelect.innerHTML += `<option value="${hour}">${hour}</option>`;
+            endHourSelect.innerHTML += `<option value="${hour}">${hour}</option>`;
+        }
+        for (let i = 0; i < 60; i += 5) { // 5-minute intervals for minutes
+            const minute = String(i).padStart(2, '0');
+            startMinuteSelect.innerHTML += `<option value="${minute}">${minute}</option>`;
+            endMinuteSelect.innerHTML += `<option value="${minute}">${minute}</option>`;
+        }
+    };
 
     // --- Helper function to convert time to minutes ---
     const timeToMinutes = (time) => {
@@ -51,8 +67,45 @@ document.addEventListener('DOMContentLoaded', () => {
             bookedTimesList.appendChild(bookedSlot);
         });
     };
+    
+    // --- Highlight Unavailable Slots ---
+    const highlightUnavailableSlots = (bookings) => {
+        // Clear all previous highlights
+        document.querySelectorAll('.time-picker-group option').forEach(option => {
+            option.classList.remove('unavailable');
+        });
 
-    // --- Check for Time Overlaps ---
+        const allSlots = [];
+        for (let h = 0; h < 24; h++) {
+            for (let m = 0; m < 60; m += 5) {
+                const hour = String(h).padStart(2, '0');
+                const minute = String(m).padStart(2, '0');
+                allSlots.push({
+                    time: `${hour}:${minute}`,
+                    minutes: timeToMinutes(`${hour}:${minute}`)
+                });
+            }
+        }
+        
+        allSlots.forEach(slot => {
+            const isUnavailable = bookings.some(booking => {
+                const startMinutes = timeToMinutes(booking.startTime);
+                const endMinutes = timeToMinutes(booking.endTime);
+                return (slot.minutes >= startMinutes && slot.minutes < endMinutes);
+            });
+
+            if (isUnavailable) {
+                document.querySelectorAll(`option[value="${slot.time.substring(0,2)}"]`).forEach(el => {
+                    if (el.parentElement.id.includes('hour')) el.classList.add('unavailable');
+                });
+                document.querySelectorAll(`option[value="${slot.time.substring(3,5)}"]`).forEach(el => {
+                    if (el.parentElement.id.includes('minute')) el.classList.add('unavailable');
+                });
+            }
+        });
+    };
+
+    // --- Check for Time Overlaps (for booking) ---
     const checkOverlap = (bookings, newStart, newEnd) => {
         const newStartMinutes = timeToMinutes(newStart);
         const newEndMinutes = timeToMinutes(newEnd);
@@ -72,6 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
             bookings.push(doc.data());
         });
         renderBookedTimes(bookings);
+        highlightUnavailableSlots(bookings);
     }, error => {
         console.error("Error fetching documents: ", error);
         bookedTimesList.textContent = "Failed to connect to the database.";
@@ -79,15 +133,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- Handle Custom Time Booking Button Click ---
     bookCustomBtn.addEventListener('click', async () => {
-        const customStartTime = startTimeInput.value;
-        const customEndTime = endTimeInput.value;
+        const customStartTime = `${startHourSelect.value}:${startMinuteSelect.value}`;
+        const customEndTime = `${endHourSelect.value}:${endMinuteSelect.value}`;
 
-        if (!customStartTime || !customEndTime) {
-            alert('Please select both a start and end time.');
-            return;
-        }
-
-        if (customStartTime >= customEndTime) {
+        if (timeToMinutes(customStartTime) >= timeToMinutes(customEndTime)) {
             alert('End time must be after start time.');
             return;
         }
@@ -154,5 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     };
+    
+    populateTimePickers();
     generateQRCode();
 });
