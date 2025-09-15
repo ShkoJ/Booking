@@ -6,6 +6,8 @@
     <title>Meeting Room Booking</title>
     <link rel="stylesheet" href="style.css">
     
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     
@@ -24,18 +26,12 @@
             <h2>Book a Time Slot</h2>
             <div class="custom-form">
                 <div class="form-group">
-                    <label for="start-hour">Start Time:</label>
-                    <div class="time-picker-group">
-                        <select id="start-hour" name="start-hour"></select>
-                        <select id="start-minute" name="start-minute"></select>
-                    </div>
+                    <label for="start-time">Start Time:</label>
+                    <input type="text" id="start-time" name="start-time" placeholder="Select start time" required>
                 </div>
                 <div class="form-group">
-                    <label for="end-hour">End Time:</label>
-                    <div class="time-picker-group">
-                        <select id="end-hour" name="end-hour"></select>
-                        <select id="end-minute" name="end-minute"></select>
-                    </div>
+                    <label for="end-time">End Time:</label>
+                    <input type="text" id="end-time" name="end-time" placeholder="Select end time" required>
                 </div>
                 <button id="book-custom-btn">Check Availability & Book</button>
             </div>
@@ -68,6 +64,8 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    
     <script src="script.js"></script>
 </body>
 </html>
