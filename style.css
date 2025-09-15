@@ -25,64 +25,52 @@ h1, h2 {
     margin-bottom: 20px;
 }
 
-#qr-container {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 30px;
-}
-
-#qrcode {
-    padding: 10px;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
-
 .booking-options-section, .booked-times-section {
     margin-bottom: 40px;
 }
 
-.custom-form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    align-items: center;
+.time-slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
     padding: 20px;
     border: 1px solid #ccc;
     border-radius: 8px;
 }
 
-.form-group {
-    width: 100%;
-    max-width: 300px;
-    text-align: left;
-}
-
-input[type="text"] {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
+.time-slot-btn {
+    padding: 12px 10px;
+    border: 1px solid #3498db;
+    background-color: #f0f8ff;
+    color: #3498db;
     border-radius: 5px;
-    box-sizing: border-box;
-    font-size: 1rem;
     cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: bold;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 }
 
-button {
-    padding: 12px 25px;
-    border: none;
+.time-slot-btn:hover:not(:disabled) {
     background-color: #3498db;
     color: white;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: background-color 0.2s;
-    width: 100%;
-    max-width: 300px;
 }
 
-button:hover {
-    background-color: #2980b9;
+.time-slot-btn:disabled {
+    cursor: not-allowed;
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+    color: #6c757d;
+}
+
+.time-slot-btn.booked {
+    border-color: #e74c3c;
+    background-color: #fcebeb;
+    color: #e74c3c;
+    text-decoration: line-through;
+}
+
+.booked-times-section h2 {
+    margin-top: 0;
 }
 
 .time-slots {
@@ -115,7 +103,7 @@ button:hover {
 }
 
 .booked-slot.done {
-    border-left-color: #2ecc71; /* Green color for done meetings */
+    border-left-color: #2ecc71;
     opacity: 0.7;
 }
 
@@ -177,4 +165,16 @@ button:hover {
 
 #booking-form button {
     width: 100%;
+    padding: 12px 25px;
+    border: none;
+    background-color: #3498db;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.2s;
+}
+
+#booking-form button:hover {
+    background-color: #2980b9;
 }
