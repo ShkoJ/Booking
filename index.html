@@ -13,9 +13,17 @@
 
         <div class="booking-options-section">
             <h2>Select a Time Slot</h2>
-            <div id="time-slots-grid" class="time-slots-grid">
-                <p>Loading available slots...</p>
+            <div class="time-selectors">
+                <div class="form-group">
+                    <label for="start-time">Start Time:</label>
+                    <select id="start-time" class="time-select"></select>
+                </div>
+                <div class="form-group">
+                    <label for="end-time">End Time:</label>
+                    <select id="end-time" class="time-select"></select>
+                </div>
             </div>
+            <button id="check-availability-btn" class="book-btn">Check Availability & Book</button>
         </div>
 
         <div class="booked-times-section">
