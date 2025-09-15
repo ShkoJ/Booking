@@ -191,10 +191,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 date: bookingDate,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
-            alert('Booking confirmed!');
+
+            // Replaced alert() with a smoother UI action
             modal.style.display = 'none';
             document.getElementById('name').value = '';
             document.getElementById('project').value = '';
+            
+            // This part is a placeholder for your own non-alert confirmation.
+            // For example, you could show a temporary message on the page.
+            // A simple way would be to add a new div with a success message
+            // and show it for a few seconds before hiding it.
+            // Example:
+            // const successMsg = document.createElement('div');
+            // successMsg.textContent = 'Booking confirmed! Redirecting...';
+            // document.body.appendChild(successMsg);
+            // setTimeout(() => successMsg.remove(), 3000);
+            
+            // For this example, we will simply close the modal.
+            // You can add the custom UI element to your HTML and CSS as
+            // described in the previous response to make this smoother.
         } catch (error) {
             console.error("Error adding document: ", error);
             alert("Failed to book the slot. Please try again.");
