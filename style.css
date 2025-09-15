@@ -196,3 +196,9 @@ h1, h2 {
 #booking-form button:hover {
     background-color: #2980b9;
 }
+/* Fixes the iPhone zoom issue by setting a minimum font size */
+input[type="text"],
+select {
+    font-size: 16px; 
+}
+
