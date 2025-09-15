@@ -14,13 +14,11 @@
 <body>
     <div class="container">
         <h1>Meeting Room Booking</h1>
-        <p>Scan the QR code on the door to book a slot.</p>
-        
         <div id="qr-container">
             <div id="qrcode"></div>
         </div>
 
-        <div class="custom-time-section">
+        <div class="booking-options-section">
             <h2>Book a Time Slot</h2>
             <div class="custom-form">
                 <div class="form-group">
@@ -28,15 +26,10 @@
                     <input type="time" id="start-time" name="start-time" required>
                 </div>
                 <div class="form-group">
-                    <label for="duration">Duration:</label>
-                    <select id="duration">
-                        <option value="30">30 minutes</option>
-                        <option value="60">1 hour</option>
-                        <option value="90">1 hour 30 mins</option>
-                        <option value="120">2 hours</option>
-                    </select>
+                    <label for="end-time">End Time:</label>
+                    <input type="time" id="end-time" name="end-time" required>
                 </div>
-                <button id="book-time-btn">Book Selected Time</button>
+                <button id="book-custom-btn">Check Availability & Book</button>
             </div>
         </div>
 
