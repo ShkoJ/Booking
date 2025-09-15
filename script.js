@@ -19,30 +19,52 @@ document.addEventListener('DOMContentLoaded', () => {
     const bookingForm = document.getElementById('booking-form');
     const closeBtn = document.querySelector('.close-btn');
     const bookCustomBtn = document.getElementById('book-custom-btn');
-    const startTimeInput = document.getElementById('start-time');
-    const endTimeInput = document.getElementById('end-time');
+
+    // New elements: selects for start/end
+    const startHourSelect = document.getElementById('start-hour');
+    const startMinuteSelect = document.getElementById('start-minute');
+    const endHourSelect = document.getElementById('end-hour');
+    const endMinuteSelect = document.getElementById('end-minute');
 
     const bookingsCollection = db.collection('bookings');
 
-    // Initialize Flatpickr for a modern time picker UI
-    flatpickr(startTimeInput, {
-        enableTime: true,
-        noCalendar: true,
-        dateFormat: "H:i",
-        time_24hr: true,
-        minuteIncrement: 5,
-        defaultDate: new Date()
-    });
-    flatpickr(endTimeInput, {
-        enableTime: true,
-        noCalendar: true,
-        dateFormat: "H:i",
-        time_24hr: true,
-        minuteIncrement: 5,
-        defaultDate: new Date()
-    });
+    // helpers
+    const pad = n => String(n).padStart(2, '0');
 
-    // --- Helper function to get today's date in YYYY-MM-DD format ---
+    // populate select options: hours 01..24, minutes 00,05,...,55
+    const populateTimeSelects = () => {
+        // Hours 1..24 (display as 01..24)
+        for (let h = 1; h <= 24; h++) {
+            const v = pad(h);
+            [startHourSelect, endHourSelect].forEach(sel => {
+                const opt = document.createElement('option');
+                opt.value = v;
+                opt.textContent = v;
+                sel.appendChild(opt);
+            });
+        }
+        // Minutes step 5
+        for (let m = 0; m < 60; m += 5) {
+            const v = pad(m);
+            [startMinuteSelect, endMinuteSelect].forEach(sel => {
+                const opt = document.createElement('option');
+                opt.value = v;
+                opt.textContent = v;
+                sel.appendChild(opt);
+            });
+        }
+    };
+
+    // Convert our 1-24 hour display back to numeric 0-24 for math:
+    // '24' => 24, '01' => 1, etc.
+    // time string format: "HH:MM" where HH may be 01..24
+    const timeToMinutes = (time) => {
+        const [hourStr, minuteStr] = time.split(':').map(s => s.trim());
+        const hours = Number(hourStr);
+        const minutes = Number(minuteStr);
+        return hours * 60 + minutes;
+    };
+
     const getTodayDate = () => {
         const today = new Date();
         const year = today.getFullYear();
@@ -51,42 +73,47 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${year}-${month}-${day}`;
     };
 
-    // --- Helper function to get current time in HH:MM format ---
+    // returns "HH:MM" with HH using two digits 01..24 (24 allowed for midnight end)
     const getCurrentTime = () => {
         const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0'); // 00..23
         const minutes = String(now.getMinutes()).padStart(2, '0');
+        // convert 00 to 24 only for display consistency? We'll keep 00 as 00 for current-time comparisons.
+        // NOTE: timeToMinutes handles both 00..23 and 24.
         return `${hours}:${minutes}`;
     };
 
-    // --- Helper function to check if a booking is in the past ---
+    // is booking finished (use minute arithmetic)
     const isBookingDone = (endTime) => {
-        const now = getCurrentTime();
-        return endTime <= now;
+        // compare minutes
+        const nowMinutes = timeToMinutes(getCurrentTime());
+        return timeToMinutes(endTime) <= nowMinutes;
     };
 
-    // --- Helper function to convert time to minutes ---
-    const timeToMinutes = (time) => {
-        const [hours, minutes] = time.split(':').map(Number);
-        return hours * 60 + minutes;
+    // return time from selects
+    const getSelectedTime = (which) => {
+        if (which === 'start') {
+            return `${startHourSelect.value}:${startMinuteSelect.value}`;
+        } else {
+            return `${endHourSelect.value}:${endMinuteSelect.value}`;
+        }
     };
 
-    // --- Render Booked Times ---
+    // Render Booked Times (sort by numeric minutes)
     const renderBookedTimes = (bookings) => {
         bookedTimesList.innerHTML = '';
-        if (bookings.length === 0) {
+        if (!bookings || bookings.length === 0) {
             bookedTimesList.textContent = "No bookings for today. All clear!";
             bookedTimesList.style.textAlign = 'center';
             return;
         }
 
-        bookings.sort((a, b) => a.startTime.localeCompare(b.startTime));
+        bookings.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
 
         bookings.forEach(booking => {
             const bookedSlot = document.createElement('div');
             bookedSlot.classList.add('booked-slot');
 
-            // Check if the booking is "Done" and apply a class
             if (isBookingDone(booking.endTime)) {
                 bookedSlot.classList.add('done');
             }
@@ -102,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // --- Check for Time Overlaps ---
+    // overlap check (same logic, numeric)
     const checkOverlap = (bookings, newStart, newEnd) => {
         const newStartMinutes = timeToMinutes(newStart);
         const newEndMinutes = timeToMinutes(newEnd);
@@ -110,42 +137,68 @@ document.addEventListener('DOMContentLoaded', () => {
         return bookings.some(booking => {
             const existingStartMinutes = timeToMinutes(booking.startTime);
             const existingEndMinutes = timeToMinutes(booking.endTime);
-
             return (newStartMinutes < existingEndMinutes) && (newEndMinutes > existingStartMinutes);
         });
     };
 
-    // --- Real-time Firestore Listener (with filter) ---
+    // set default times: now rounded up to 5 min, end = +30 min
+    const setDefaultTimes = () => {
+        const now = new Date();
+        let h = now.getHours(); // 0..23
+        let m = Math.ceil(now.getMinutes() / 5) * 5;
+        if (m === 60) { m = 0; h = (h + 1) % 24; }
+
+        // displayHour: convert 0 -> "24" only if you prefer; for clarity we map 0 -> "00" here.
+        // Because most users expect 00:xx at midnight; if you want 24, we could map 0 -> 24.
+        const displayHour = (h === 0) ? '00' : pad(h); // NOTE: your requirement was 1-24; if you want 01..24 mapping, change this mapping.
+        // but to follow your 1-24 request exactly, map 0 -> 24 and 1..23 -> 01..23:
+        const displayHour1to24 = (h === 0) ? '24' : pad(h);
+
+        startHourSelect.value = displayHour1to24;
+        startMinuteSelect.value = pad(m);
+
+        // end time +30 minutes
+        let totalMinutes = h * 60 + m + 30;
+        let eh = Math.floor(totalMinutes / 60) % 24; // 0..23
+        let em = totalMinutes % 60;
+        const displayEndHour1to24 = (eh === 0) ? '24' : pad(eh);
+
+        endHourSelect.value = displayEndHour1to24;
+        endMinuteSelect.value = pad(em);
+    };
+
+    // Real-time Firestore Listener (with filter)
     const todayDate = getTodayDate();
     bookingsCollection.where('date', '==', todayDate).onSnapshot(querySnapshot => {
         const bookings = [];
-        querySnapshot.forEach(doc => {
-            bookings.push(doc.data());
-        });
+        querySnapshot.forEach(doc => bookings.push(doc.data()));
         renderBookedTimes(bookings);
     }, error => {
         console.error("Error fetching documents: ", error);
         bookedTimesList.textContent = "Failed to connect to the database.";
     });
 
-    // --- Handle Custom Time Booking Button Click ---
+    // Initialize selects
+    populateTimeSelects();
+    setDefaultTimes();
+
+    // Handle Custom Time Booking Button Click
     bookCustomBtn.addEventListener('click', async () => {
-        const customStartTime = startTimeInput.value;
-        const customEndTime = endTimeInput.value;
-        const currentTime = getCurrentTime();
+        const customStartTime = getSelectedTime('start');
+        const customEndTime = getSelectedTime('end');
 
         if (!customStartTime || !customEndTime) {
             alert('Please select both a start and end time.');
             return;
         }
 
-        if (customStartTime >= customEndTime) {
+        if (timeToMinutes(customStartTime) >= timeToMinutes(customEndTime)) {
             alert('End time must be after start time.');
             return;
         }
 
         // Prevent booking a time that has already passed
-        if (customStartTime < currentTime) {
+        if (timeToMinutes(customStartTime) < timeToMinutes(getCurrentTime())) {
             alert('You cannot book a meeting in the past.');
             return;
         }
@@ -164,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
         bookingForm.dataset.endTime = customEndTime;
     });
 
-    // --- Handle Booking Confirmation from Modal ---
+    // Handle Booking Confirmation from Modal
     bookingForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = document.getElementById('name').value;
@@ -190,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- Modal Control ---
+    // Modal Control
     closeBtn.addEventListener('click', () => {
         modal.style.display = 'none';
     });
@@ -200,10 +253,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- QR Code Generation ---
+    // QR Code Generation
     const generateQRCode = () => {
         const pageURL = window.location.href;
         if (pageURL && QRCode) {
+            document.getElementById("qrcode").innerHTML = '';
             new QRCode(document.getElementById("qrcode"), {
                 text: pageURL,
                 width: 128,
@@ -216,23 +270,4 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     generateQRCode();
-    flatpickr(startTimeInput, {
-  enableTime: true,
-  noCalendar: true,
-  dateFormat: "H:i",
-  time_24hr: true,
-  minuteIncrement: 5,
-  defaultDate: new Date(),
-  disableMobile: true // This is the key line
-});
-
-flatpickr(endTimeInput, {
-  enableTime: true,
-  noCalendar: true,
-  dateFormat: "H:i",
-  time_24hr: true,
-  minuteIncrement: 5,
-  defaultDate: new Date(),
-  disableMobile: true // And this one
-});
 });
