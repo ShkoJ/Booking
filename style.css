@@ -29,44 +29,62 @@ h1, h2 {
     margin-bottom: 40px;
 }
 
-.time-slots-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 10px;
-    padding: 20px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
+.time-selectors {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 20px;
 }
 
-.time-slot-btn {
-    padding: 12px 10px;
-    border: 1px solid #3498db;
-    background-color: #f0f8ff;
-    color: #3498db;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.9rem;
+.form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 200px;
+}
+
+.form-group label {
     font-weight: bold;
-    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+    margin-bottom: 5px;
+    color: #555;
 }
 
-.time-slot-btn:hover:not(:disabled) {
+.time-select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.time-select:hover {
+    border-color: #3498db;
+}
+
+.time-select option.unavailable {
+    color: #999;
+    text-decoration: line-through;
+    font-style: italic;
+}
+
+.book-btn {
+    padding: 12px 25px;
+    border: none;
     background-color: #3498db;
     color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: background-color 0.2s;
 }
 
-.time-slot-btn:disabled {
-    cursor: not-allowed;
-    background-color: #e9ecef;
-    border-color: #adb5bd;
-    color: #6c757d;
-}
-
-.time-slot-btn.booked {
-    border-color: #e74c3c;
-    background-color: #fcebeb;
-    color: #e74c3c;
-    text-decoration: line-through;
+.book-btn:hover {
+    background-color: #2980b9;
 }
 
 .booked-times-section h2 {
