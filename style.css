@@ -58,12 +58,29 @@ h1, h2 {
     text-align: left;
 }
 
-input[type="time"] {
+.time-picker-group {
+    display: flex;
+    gap: 10px;
+}
+
+input[type="time"], select {
     width: 100%;
     padding: 10px;
     border: 1px solid #ddd;
     border-radius: 5px;
     box-sizing: border-box;
+    font-size: 1rem; /* Better font size for mobile */
+}
+
+select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-color: white;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="gray" d="M7 10l5 5 5-5z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 10px top 50%;
+    background-size: 12px;
 }
 
 button {
@@ -163,4 +180,9 @@ button:hover {
 
 #booking-form button {
     width: 100%;
+}
+
+.unavailable {
+    color: #e74c3c;
+    font-weight: bold;
 }
