@@ -14,56 +14,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const db = firebase.firestore();
 
     const bookedTimesList = document.getElementById('booked-times-list');
+    const timeSlotsGrid = document.getElementById('time-slots-grid');
     const modal = document.getElementById('booking-modal');
     const modalTimeSlot = document.getElementById('modal-time-slot');
     const bookingForm = document.getElementById('booking-form');
     const closeBtn = document.querySelector('.close-btn');
-    const bookCustomBtn = document.getElementById('book-custom-btn');
-
-    // New elements: selects for start/end
-    const startHourSelect = document.getElementById('start-hour');
-    const startMinuteSelect = document.getElementById('start-minute');
-    const endHourSelect = document.getElementById('end-hour');
-    const endMinuteSelect = document.getElementById('end-minute');
 
     const bookingsCollection = db.collection('bookings');
 
-    // helpers
     const pad = n => String(n).padStart(2, '0');
-
-    // populate select options: hours 01..24, minutes 00,05,...,55
-    const populateTimeSelects = () => {
-        // Hours 1..24 (display as 01..24)
-        for (let h = 1; h <= 24; h++) {
-            const v = pad(h);
-            [startHourSelect, endHourSelect].forEach(sel => {
-                const opt = document.createElement('option');
-                opt.value = v;
-                opt.textContent = v;
-                sel.appendChild(opt);
-            });
-        }
-        // Minutes step 5
-        for (let m = 0; m < 60; m += 5) {
-            const v = pad(m);
-            [startMinuteSelect, endMinuteSelect].forEach(sel => {
-                const opt = document.createElement('option');
-                opt.value = v;
-                opt.textContent = v;
-                sel.appendChild(opt);
-            });
-        }
-    };
-
-    // Convert our 1-24 hour display back to numeric 0-24 for math:
-    // '24' => 24, '01' => 1, etc.
-    // time string format: "HH:MM" where HH may be 01..24
-    const timeToMinutes = (time) => {
-        const [hourStr, minuteStr] = time.split(':').map(s => s.trim());
-        const hours = Number(hourStr);
-        const minutes = Number(minuteStr);
-        return hours * 60 + minutes;
-    };
 
     const getTodayDate = () => {
         const today = new Date();
@@ -73,33 +32,36 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${year}-${month}-${day}`;
     };
 
-    // returns "HH:MM" with HH using two digits 01..24 (24 allowed for midnight end)
-    const getCurrentTime = () => {
-        const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0'); // 00..23
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        // convert 00 to 24 only for display consistency? We'll keep 00 as 00 for current-time comparisons.
-        // NOTE: timeToMinutes handles both 00..23 and 24.
-        return `${hours}:${minutes}`;
+    const timeToMinutes = (time) => {
+        const [hourStr, minuteStr] = time.split(':').map(s => s.trim());
+        const hours = Number(hourStr);
+        const minutes = Number(minuteStr);
+        return hours * 60 + minutes;
     };
 
-    // is booking finished (use minute arithmetic)
     const isBookingDone = (endTime) => {
-        // compare minutes
         const nowMinutes = timeToMinutes(getCurrentTime());
         return timeToMinutes(endTime) <= nowMinutes;
     };
 
-    // return time from selects
-    const getSelectedTime = (which) => {
-        if (which === 'start') {
-            return `${startHourSelect.value}:${startMinuteSelect.value}`;
-        } else {
-            return `${endHourSelect.value}:${endMinuteSelect.value}`;
-        }
+    const getCurrentTime = () => {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
+    };
+    
+    // checks for overlap between a new slot and an existing booking
+    const checkOverlap = (bookings, newStart, newEnd) => {
+        const newStartMinutes = timeToMinutes(newStart);
+        const newEndMinutes = timeToMinutes(newEnd);
+        return bookings.some(booking => {
+            const existingStartMinutes = timeToMinutes(booking.startTime);
+            const existingEndMinutes = timeToMinutes(booking.endTime);
+            return (newStartMinutes < existingEndMinutes) && (newEndMinutes > existingStartMinutes);
+        });
     };
 
-    // Render Booked Times (sort by numeric minutes)
     const renderBookedTimes = (bookings) => {
         bookedTimesList.innerHTML = '';
         if (!bookings || bookings.length === 0) {
@@ -113,11 +75,9 @@ document.addEventListener('DOMContentLoaded', () => {
         bookings.forEach(booking => {
             const bookedSlot = document.createElement('div');
             bookedSlot.classList.add('booked-slot');
-
             if (isBookingDone(booking.endTime)) {
                 bookedSlot.classList.add('done');
             }
-
             bookedSlot.innerHTML = `
                 <div>
                     <strong>${booking.startTime} - ${booking.endTime}</strong>
@@ -129,92 +89,58 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // overlap check (same logic, numeric)
-    const checkOverlap = (bookings, newStart, newEnd) => {
-        const newStartMinutes = timeToMinutes(newStart);
-        const newEndMinutes = timeToMinutes(newEnd);
-
-        return bookings.some(booking => {
-            const existingStartMinutes = timeToMinutes(booking.startTime);
-            const existingEndMinutes = timeToMinutes(booking.endTime);
-            return (newStartMinutes < existingEndMinutes) && (newEndMinutes > existingStartMinutes);
-        });
-    };
-
-    // set default times: now rounded up to 5 min, end = +30 min
-    const setDefaultTimes = () => {
+    // generates the grid of available time slots
+    const generateTimeSlots = (bookedSlots) => {
+        timeSlotsGrid.innerHTML = '';
         const now = new Date();
-        let h = now.getHours(); // 0..23
-        let m = Math.ceil(now.getMinutes() / 5) * 5;
-        if (m === 60) { m = 0; h = (h + 1) % 24; }
+        let currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const interval = 30; 
 
-        // displayHour: convert 0 -> "24" only if you prefer; for clarity we map 0 -> "00" here.
-        // Because most users expect 00:xx at midnight; if you want 24, we could map 0 -> 24.
-        const displayHour = (h === 0) ? '00' : pad(h); // NOTE: your requirement was 1-24; if you want 01..24 mapping, change this mapping.
-        // but to follow your 1-24 request exactly, map 0 -> 24 and 1..23 -> 01..23:
-        const displayHour1to24 = (h === 0) ? '24' : pad(h);
+        for (let i = 0; i < 24 * 60 / interval; i++) {
+            const slotStartMinutes = i * interval;
+            const slotEndMinutes = slotStartMinutes + interval;
 
-        startHourSelect.value = displayHour1to24;
-        startMinuteSelect.value = pad(m);
+            const startHour = pad(Math.floor(slotStartMinutes / 60));
+            const startMinute = pad(slotStartMinutes % 60);
+            const endHour = pad(Math.floor(slotEndMinutes / 60));
+            const endMinute = pad(slotEndMinutes % 60);
+            const startTime = `${startHour}:${startMinute}`;
+            const endTime = `${endHour}:${endMinute}`;
 
-        // end time +30 minutes
-        let totalMinutes = h * 60 + m + 30;
-        let eh = Math.floor(totalMinutes / 60) % 24; // 0..23
-        let em = totalMinutes % 60;
-        const displayEndHour1to24 = (eh === 0) ? '24' : pad(eh);
+            const isBooked = checkOverlap(bookedSlots, startTime, endTime);
+            const isPast = slotEndMinutes <= currentMinutes;
 
-        endHourSelect.value = displayEndHour1to24;
-        endMinuteSelect.value = pad(em);
+            const slotElement = document.createElement('button');
+            slotElement.textContent = `${startTime} - ${endTime}`;
+            slotElement.dataset.startTime = startTime;
+            slotElement.dataset.endTime = endTime;
+            slotElement.classList.add('time-slot-btn');
+
+            if (isBooked || isPast) {
+                slotElement.disabled = true;
+                slotElement.classList.add('booked');
+            } else {
+                slotElement.addEventListener('click', () => {
+                    modalTimeSlot.textContent = `Time: ${startTime} - ${endTime}`;
+                    modal.style.display = 'flex';
+                    bookingForm.dataset.startTime = startTime;
+                    bookingForm.dataset.endTime = endTime;
+                });
+            }
+            timeSlotsGrid.appendChild(slotElement);
+        }
     };
 
-    // Real-time Firestore Listener (with filter)
+    // Real-time Firestore Listener
     const todayDate = getTodayDate();
     bookingsCollection.where('date', '==', todayDate).onSnapshot(querySnapshot => {
         const bookings = [];
         querySnapshot.forEach(doc => bookings.push(doc.data()));
         renderBookedTimes(bookings);
+        generateTimeSlots(bookings); // re-generate time slots to reflect new bookings
     }, error => {
         console.error("Error fetching documents: ", error);
         bookedTimesList.textContent = "Failed to connect to the database.";
-    });
-
-    // Initialize selects
-    populateTimeSelects();
-    setDefaultTimes();
-
-    // Handle Custom Time Booking Button Click
-    bookCustomBtn.addEventListener('click', async () => {
-        const customStartTime = getSelectedTime('start');
-        const customEndTime = getSelectedTime('end');
-
-        if (!customStartTime || !customEndTime) {
-            alert('Please select both a start and end time.');
-            return;
-        }
-
-        if (timeToMinutes(customStartTime) >= timeToMinutes(customEndTime)) {
-            alert('End time must be after start time.');
-            return;
-        }
-
-        // Prevent booking a time that has already passed
-        if (timeToMinutes(customStartTime) < timeToMinutes(getCurrentTime())) {
-            alert('You cannot book a meeting in the past.');
-            return;
-        }
-
-        const snapshot = await bookingsCollection.where('date', '==', todayDate).get();
-        const currentBookings = snapshot.docs.map(doc => doc.data());
-
-        if (checkOverlap(currentBookings, customStartTime, customEndTime)) {
-            alert('This time range overlaps with an existing booking. Please choose another time.');
-            return;
-        }
-
-        modalTimeSlot.textContent = `Time: ${customStartTime} - ${customEndTime}`;
-        modal.style.display = 'flex';
-        bookingForm.dataset.startTime = customStartTime;
-        bookingForm.dataset.endTime = customEndTime;
     });
 
     // Handle Booking Confirmation from Modal
@@ -227,16 +153,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const bookingDate = getTodayDate();
 
         try {
+            // Re-check for overlap just in case another user booked the slot a moment ago
+            const snapshot = await bookingsCollection.where('date', '==', todayDate).get();
+            const currentBookings = snapshot.docs.map(doc => doc.data());
+            if (checkOverlap(currentBookings, startTime, endTime)) {
+                alert('This slot was just booked. Please choose another one.');
+                modal.style.display = 'none';
+                return;
+            }
+
             await bookingsCollection.add({
                 name: name,
                 project: project,
                 startTime: startTime,
                 endTime: endTime,
-                date: bookingDate, // Store the booking date
+                date: bookingDate,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
             alert('Booking confirmed!');
             modal.style.display = 'none';
+            document.getElementById('name').value = '';
+            document.getElementById('project').value = '';
         } catch (error) {
             console.error("Error adding document: ", error);
             alert("Failed to book the slot. Please try again.");
@@ -252,22 +189,4 @@ document.addEventListener('DOMContentLoaded', () => {
             modal.style.display = 'none';
         }
     });
-
-    // QR Code Generation
-    const generateQRCode = () => {
-        const pageURL = window.location.href;
-        if (pageURL && QRCode) {
-            document.getElementById("qrcode").innerHTML = '';
-            new QRCode(document.getElementById("qrcode"), {
-                text: pageURL,
-                width: 128,
-                height: 128,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-        }
-    };
-
-    generateQRCode();
 });
