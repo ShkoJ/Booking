@@ -13,8 +13,10 @@ document.addEventListener('DOMContentLoaded', () => {
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    const startTimeSelect = document.getElementById('start-time');
+    const endTimeSelect = document.getElementById('end-time');
+    const checkBtn = document.getElementById('check-availability-btn');
     const bookedTimesList = document.getElementById('booked-times-list');
-    const timeSlotsGrid = document.getElementById('time-slots-grid');
     const modal = document.getElementById('booking-modal');
     const modalTimeSlot = document.getElementById('modal-time-slot');
     const bookingForm = document.getElementById('booking-form');
@@ -58,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return bookings.some(booking => {
             const existingStartMinutes = timeToMinutes(booking.startTime);
             const existingEndMinutes = timeToMinutes(booking.endTime);
+            // Check for overlap using the AABB collision detection method
             return (newStartMinutes < existingEndMinutes) && (newEndMinutes > existingStartMinutes);
         });
     };
@@ -89,46 +92,65 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // generates the grid of available time slots
-    const generateTimeSlots = (bookedSlots) => {
-        timeSlotsGrid.innerHTML = '';
+    const populateTimeSelectors = (bookedSlots) => {
+        startTimeSelect.innerHTML = '';
+        endTimeSelect.innerHTML = '';
         const now = new Date();
-        let currentMinutes = now.getHours() * 60 + now.getMinutes();
-        const interval = 30; 
+        const interval = 30; // 30-minute intervals
 
+        // Start Time dropdown
         for (let i = 0; i < 24 * 60 / interval; i++) {
             const slotStartMinutes = i * interval;
-            const slotEndMinutes = slotStartMinutes + interval;
+            const slotStartHour = pad(Math.floor(slotStartMinutes / 60));
+            const slotStartMinute = pad(slotStartMinutes % 60);
+            const startTime = `${slotStartHour}:${slotStartMinute}`;
 
-            const startHour = pad(Math.floor(slotStartMinutes / 60));
-            const startMinute = pad(slotStartMinutes % 60);
-            const endHour = pad(Math.floor(slotEndMinutes / 60));
-            const endMinute = pad(slotEndMinutes % 60);
-            const startTime = `${startHour}:${startMinute}`;
-            const endTime = `${endHour}:${endMinute}`;
+            const option = document.createElement('option');
+            option.value = startTime;
+            option.textContent = startTime;
 
-            const isBooked = checkOverlap(bookedSlots, startTime, endTime);
-            const isPast = slotEndMinutes <= currentMinutes;
-
-            const slotElement = document.createElement('button');
-            slotElement.textContent = `${startTime} - ${endTime}`;
-            slotElement.dataset.startTime = startTime;
-            slotElement.dataset.endTime = endTime;
-            slotElement.classList.add('time-slot-btn');
-
-            if (isBooked || isPast) {
-                slotElement.disabled = true;
-                slotElement.classList.add('booked');
-            } else {
-                slotElement.addEventListener('click', () => {
-                    modalTimeSlot.textContent = `Time: ${startTime} - ${endTime}`;
-                    modal.style.display = 'flex';
-                    bookingForm.dataset.startTime = startTime;
-                    bookingForm.dataset.endTime = endTime;
-                });
+            // Disable past times and times that are currently booked
+            const isPast = slotStartMinutes <= now.getHours() * 60 + now.getMinutes();
+            const isBooked = checkOverlap(bookedSlots, startTime, `${pad(Math.floor((slotStartMinutes + interval) / 60))}:${pad((slotStartMinutes + interval) % 60)}`);
+            
+            if (isPast || isBooked) {
+                option.disabled = true;
+                option.classList.add('unavailable');
             }
-            timeSlotsGrid.appendChild(slotElement);
+            startTimeSelect.appendChild(option);
         }
+
+        // End Time dropdown
+        // The end time options are dynamically populated based on the selected start time
+        const updateEndTimeOptions = () => {
+            endTimeSelect.innerHTML = '';
+            const selectedStartTime = startTimeSelect.value;
+            if (!selectedStartTime) return;
+
+            let startMinutes = timeToMinutes(selectedStartTime);
+            
+            for (let i = startMinutes / interval + 1; i <= 24 * 60 / interval; i++) {
+                const slotEndMinutes = i * interval;
+                const slotEndHour = pad(Math.floor(slotEndMinutes / 60));
+                const slotEndMinute = pad(slotEndMinutes % 60);
+                const endTime = `${slotEndHour}:${slotEndMinute}`;
+
+                const option = document.createElement('option');
+                option.value = endTime;
+                option.textContent = endTime;
+
+                // Disable end times if the duration overlaps with an existing booking
+                const isBooked = checkOverlap(bookedSlots, selectedStartTime, endTime);
+                if (isBooked) {
+                    option.disabled = true;
+                    option.classList.add('unavailable');
+                }
+                endTimeSelect.appendChild(option);
+            }
+        };
+
+        startTimeSelect.addEventListener('change', updateEndTimeOptions);
+        updateEndTimeOptions(); // Initial population
     };
 
     // Real-time Firestore Listener
@@ -137,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const bookings = [];
         querySnapshot.forEach(doc => bookings.push(doc.data()));
         renderBookedTimes(bookings);
-        generateTimeSlots(bookings); // re-generate time slots to reflect new bookings
+        populateTimeSelectors(bookings); // re-populate dropdowns to reflect new bookings
     }, error => {
         console.error("Error fetching documents: ", error);
         bookedTimesList.textContent = "Failed to connect to the database.";
@@ -153,7 +175,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const bookingDate = getTodayDate();
 
         try {
-            // Re-check for overlap just in case another user booked the slot a moment ago
             const snapshot = await bookingsCollection.where('date', '==', todayDate).get();
             const currentBookings = snapshot.docs.map(doc => doc.data());
             if (checkOverlap(currentBookings, startTime, endTime)) {
@@ -178,6 +199,30 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Error adding document: ", error);
             alert("Failed to book the slot. Please try again.");
         }
+    });
+
+    // Check Availability & Book Button
+    checkBtn.addEventListener('click', () => {
+        const startTime = startTimeSelect.value;
+        const endTime = endTimeSelect.value;
+
+        if (!startTime || !endTime) {
+            alert('Please select both a start and end time.');
+            return;
+        }
+
+        const startMinutes = timeToMinutes(startTime);
+        const endMinutes = timeToMinutes(endTime);
+
+        if (endMinutes <= startMinutes) {
+            alert('End time must be after start time.');
+            return;
+        }
+
+        modalTimeSlot.textContent = `Time: ${startTime} - ${endTime}`;
+        bookingForm.dataset.startTime = startTime;
+        bookingForm.dataset.endTime = endTime;
+        modal.style.display = 'flex';
     });
 
     // Modal Control
