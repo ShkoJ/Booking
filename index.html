@@ -16,7 +16,11 @@
 
         <div class="content-wrapper">
             <div class="booking-options-section">
-                <h2>Select a Time Slot</h2>
+                <h2>Select Date & Time</h2>
+                <div class="form-group date-picker-group">
+                    <label for="booking-date">Select Date:</label>
+                    <input type="text" id="booking-date" class="form-control" placeholder="Select a date...">
+                </div>
                 <div class="time-selectors">
                     <div class="form-group">
                         <label for="start-time">Start Time:</label>
@@ -31,9 +35,9 @@
             </div>
 
             <div class="booked-times-section">
-                <h2>Today's Booked Times</h2>
+                <h2>Booked Meetings</h2>
                 <div id="booked-times-list" class="time-slots">
-                    <p>Loading bookings...</p>
+                    <p>Select a date to view bookings.</p>
                 </div>
             </div>
         </div>
