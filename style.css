@@ -1,8 +1,10 @@
-/* General Body and Container Styles */
 body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #f0f2f5;
     font-family: Arial, sans-serif;
     background-color: #f4f7f9;
     color: #333;
+    line-height: 1.6;
     margin: 0;
     padding: 20px;
     display: flex;
@@ -13,10 +15,14 @@ body {
 }
 
 .container {
+    width: 100%;
+    max-width: 700px;
+    background: #fff;
     background: #ffffff;
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
     width: 100%;
     max-width: 900px; /* Max width for larger screens */
     display: flex;
@@ -24,10 +30,12 @@ body {
     gap: 20px;
 }
 
+h1, h2 {
 /* Page Title */
 h1 {
     text-align: center;
     color: #2c3e50;
+    margin-bottom: 20px;
     margin-top: 0;
 }
 
@@ -46,6 +54,8 @@ h1 {
     gap: 15px;
 }
 
+.booking-options-section, .booked-times-section {
+    margin-bottom: 40px;
 .booking-options-section,
 .booked-times-section {
     padding: 20px;
@@ -56,39 +66,65 @@ h1 {
 /* Layout for Time Selectors */
 .time-selectors {
     display: flex;
+    justify-content: center;
     gap: 20px;
+    margin-bottom: 20px;
     align-items: flex-end;
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 200px;
     flex: 1;
 }
 
+.form-group label {
+    font-weight: bold;
 label {
     margin-bottom: 5px;
+    color: #555;
     font-weight: bold;
 }
 
-/* Change from .time-select to .time-input */
-.time-input { 
+.time-select {
     width: 100%;
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
+    background-color: #f9f9f9;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.time-select:hover {
+    border-color: #3498db;
+}
+
+.time-select option.unavailable {
+    color: #999;
+    text-decoration: line-through;
+    font-style: italic;
     box-sizing: border-box;
     font-size: 16px; /* Prevents mobile zoom on focus */
 }
 
 /* Buttons */
 .book-btn {
+    padding: 12px 25px;
+    border: none;
     padding: 12px 20px;
     background-color: #3498db;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: background-color 0.2s;
     font-size: 16px;
     transition: background-color 0.3s ease;
 }
@@ -97,11 +133,16 @@ label {
     background-color: #2980b9;
 }
 
+.booked-times-section h2 {
+    margin-top: 0;
+}
+
 /* Booked Times List */
 .time-slots {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    text-align: left;
     max-height: 400px;
     overflow-y: auto;
     padding-right: 10px; /* Space for scrollbar */
@@ -110,47 +151,71 @@ label {
 .booked-slot {
     background-color: #f0f4f7;
     padding: 15px;
+    border-left: 5px solid #e74c3c;
+    background-color: #f7f7f7;
+    color: #333;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     border-radius: 8px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+.booked-slot strong {
+    color: #e74c3c;
+}
+
+.booked-slot span {
+    display: block;
+    font-size: 0.9em;
+    color: #666;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
 .booked-slot.done {
+    border-left-color: #2ecc71;
     background-color: #e8f5e9;
     opacity: 0.7;
     text-decoration: line-through;
 }
 
+.booked-slot.done strong {
+    color: #2ecc71;
 .booked-slot span {
     font-size: 0.9em;
     color: #555;
     margin-left: 10px;
 }
 
+/* Modal Styling */
 /* Modal Styles */
 .modal {
     display: none;
     position: fixed;
+    z-index: 1;
     z-index: 1000;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
     background-color: rgba(0, 0, 0, 0.6);
     justify-content: center;
     align-items: center;
 }
-
-.modal-content {
+@@ -148,16 +146,20 @@ h1, h2 {
     background-color: #fff;
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
     width: 90%;
+    max-width: 400px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
     max-width: 450px;
     position: relative;
+    text-align: left;
     display: flex;
     flex-direction: column;
     gap: 15px;
@@ -161,16 +226,19 @@ label {
     top: 15px;
     right: 25px;
     color: #aaa;
+    float: right;
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
-}
-
+@@ -166,51 +168,64 @@ h1, h2 {
 .close-btn:hover,
 .close-btn:focus {
     color: #333;
+    text-decoration: none;
 }
 
+#booking-form .form-group {
+    margin-bottom: 15px;
 .modal h2 {
     margin-top: 0;
     text-align: center;
@@ -191,27 +259,53 @@ label {
 }
 
 #booking-form input {
+    width: 100%;
     padding: 10px;
+    border: 1px solid #ddd;
     border: 1px solid #ccc;
     border-radius: 5px;
+    box-sizing: border-box;
     font-size: 16px; /* Prevents mobile zoom on focus */
 }
 
 #booking-form button {
+    width: 100%;
+    padding: 12px 25px;
+    border: none;
+    background-color: #3498db;
     padding: 12px 20px;
     background-color: #27ae60;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.2s;
     font-size: 16px;
     transition: background-color 0.3s ease;
 }
 
 #booking-form button:hover {
+    background-color: #2980b9;
+}
+/* Fixes the iPhone zoom issue by setting a minimum font size */
+input[type="text"],
+select {
+    font-size: 16px; 
+}
+.hidden-message {
+    text-align: center;
+    color: green;
+    font-weight: bold;
+    margin-top: 10px;
+    opacity: 0; /* Starts invisible */
+    transition: opacity 0.5s ease-in-out; /* Smooth fade effect */
     background-color: #229954;
 }
 
+.visible-message {
+    opacity: 1; /* Fades in */
+}
 /* Responsive Design */
 @media (min-width: 768px) {
     .container {
