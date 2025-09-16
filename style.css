@@ -130,6 +130,7 @@ label {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative;
 }
 
 .booked-slot strong {
@@ -152,6 +153,25 @@ label {
 
 .booked-slot.done strong {
     color: #2ecc71;
+}
+
+.status-label {
+    font-size: 0.8em;
+    font-weight: bold;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+}
+
+.status-upcoming {
+    background-color: #f39c12;
+}
+
+.status-ongoing {
+    background-color: #2980b9;
 }
 
 .modal {
@@ -208,7 +228,8 @@ label {
     gap: 15px;
 }
 
-#booking-form input {
+#booking-form input,
+#booking-form select {
     width: 100%;
     padding: 10px;
     border: 1px solid #ccc;
