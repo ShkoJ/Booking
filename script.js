@@ -106,11 +106,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             bookedSlot.innerHTML = `
-                <div>
+                <div class="booked-slot-info">
                     <strong>${booking.startTime} - ${booking.endTime}</strong>
                     <span>${booking.name} - ${booking.project}</span>
                 </div>
-                <div>
+                <div class="booked-slot-actions">
                     ${statusLabel}
                     <button class="delete-btn" data-id="${booking.id}" data-email="${booking.email}">Delete</button>
                 </div>
@@ -247,21 +247,38 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Handle Delete Button Click
-    bookedTimesList.addEventListener('click', (e) => {
+    bookedTimesList.addEventListener('click', async (e) => {
         if (e.target.classList.contains('delete-btn')) {
             const bookingId = e.target.dataset.id;
             const email = e.target.dataset.email;
             
-            // This is where you would send an email from a backend function.
-            // For now, this is a placeholder.
             alert(`A cancellation confirmation email has been sent to ${email}. Please follow the instructions to confirm deletion.`);
-            // In a real application, you would make an API call to a Cloud Function here.
-            // Example:
-            // await fetch('YOUR_CLOUD_FUNCTION_URL/sendCancellationEmail', {
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify({ bookingId: bookingId, recipientEmail: email })
-            // });
+            
+            // EMAIL FUNCTIONALITY REQUIRES A BACKEND SERVICE
+            // You cannot send emails directly from the frontend (the user's browser) due to security policies.
+            // A separate backend service (like a Firebase Cloud Function, a Node.js server, or a service like SendGrid) is required.
+            // The frontend code would send a request to this backend service, and the backend would handle the email sending.
+            
+            // Example of a backend call (this code is for demonstration and won't work without a backend):
+            /*
+            try {
+                const response = await fetch('YOUR_BACKEND_API_URL/send-cancellation-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bookingId, email })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    alert('Cancellation email sent! Please check your email to confirm the deletion.');
+                } else {
+                    alert(`Failed to send cancellation email: ${data.message}`);
+                }
+            } catch (error) {
+                console.error('Error sending cancellation email:', error);
+                alert('An error occurred while trying to send the cancellation email.');
+            }
+            */
         }
     });
 
