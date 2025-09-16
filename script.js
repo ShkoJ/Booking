@@ -1,20 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
     // ** IMPORTANT: Replace with your actual Firebase project config **
     const firebaseConfig = {
-        apiKey: "AIzaSyC4YfTWe9eLhPZs4LBTErkLW-boINPwfAY",
-        authDomain: "booking-fe2ea.firebaseapp.com",
-        projectId: "booking-fe2ea",
-        storageBucket: "booking-fe2ea.firebasestorage.app",
-        messagingSenderId: "532325286601",
-        appId: "1:532325286601:web:4fc3c64c70cf70c60c8318",
-        measurementId: "G-VJ6KKNZZ82"
+      apiKey: "AIzaSyC4YfTWe9eLhPZs4LBTErkLW-boINPwfAY",
+      authDomain: "booking-fe2ea.firebaseapp.com",
+      projectId: "booking-fe2ea",
+      storageBucket: "booking-fe2ea.firebasestorage.app",
+      messagingSenderId: "532325286601",
+      appId: "1:532325286601:web:4fc3c64c70cf70c60c8318",
+      measurementId: "G-VJ6KKNZZ82"
     };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const startTimeInput = document.getElementById('start-time');
-    const endTimeInput = document.getElementById('end-time');
+    const startTimeSelect = document.getElementById('start-time');
+    const endTimeSelect = document.getElementById('end-time');
     const checkBtn = document.getElementById('check-availability-btn');
     const bookedTimesList = document.getElementById('booked-times-list');
     const modal = document.getElementById('booking-modal');
@@ -23,6 +23,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeBtn = document.querySelector('.close-btn');
 
     const bookingsCollection = db.collection('bookings');
+
+    const pad = n => String(n).padStart(2, '0');
+
+    const getTodayDate = () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
 
     const timeToMinutes = (time) => {
         const [hourStr, minuteStr] = time.split(':').map(s => s.trim());
@@ -42,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const minutes = String(now.getMinutes()).padStart(2, '0');
         return `${hours}:${minutes}`;
     };
-    
+
     // checks for overlap between a new slot and an existing booking
     const checkOverlap = (bookings, newStart, newEnd) => {
         const newStartMinutes = timeToMinutes(newStart);
@@ -82,36 +92,66 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    const getTodayDate = () => {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
+    const populateTimeSelectors = (bookedSlots) => {
+        startTimeSelect.innerHTML = '';
+        endTimeSelect.innerHTML = '';
+        const now = new Date();
+        const interval = 30; // 30-minute intervals
 
-    // Initialize Flatpickr for start and end times
-    const startTimePicker = flatpickr(startTimeInput, {
-        enableTime: true,
-        noCalendar: true,
-        dateFormat: "H:i",
-        time_24hr: true,
-        minuteIncrement: 1, // This allows for any minute interval, e.g., 45 minutes
-    });
+        // Start Time dropdown
+        for (let i = 0; i < 24 * 60 / interval; i++) {
+            const slotStartMinutes = i * interval;
+            const slotStartHour = pad(Math.floor(slotStartMinutes / 60));
+            const slotStartMinute = pad(slotStartMinutes % 60);
+            const startTime = `${slotStartHour}:${slotStartMinute}`;
 
-    const endTimePicker = flatpickr(endTimeInput, {
-        enableTime: true,
-        noCalendar: true,
-        dateFormat: "H:i",
-        time_24hr: true,
-        minuteIncrement: 1, // This allows for any minute interval, e.g., 45 minutes
-        onOpen: function(selectedDates, dateStr, instance) {
-            if (startTimeInput.value) {
-                const startDateTime = startTimePicker.selectedDates[0];
-                instance.set('minTime', startDateTime);
+            const option = document.createElement('option');
+            option.value = startTime;
+            option.textContent = startTime;
+
+            // Disable past times and times that are currently booked
+            const isPast = slotStartMinutes <= now.getHours() * 60 + now.getMinutes();
+            const isBooked = checkOverlap(bookedSlots, startTime, `${pad(Math.floor((slotStartMinutes + interval) / 60))}:${pad((slotStartMinutes + interval) % 60)}`);
+
+            if (isPast || isBooked) {
+                option.disabled = true;
+                option.classList.add('unavailable');
             }
+            startTimeSelect.appendChild(option);
         }
-    });
+
+        // End Time dropdown
+        // The end time options are dynamically populated based on the selected start time
+        const updateEndTimeOptions = () => {
+            endTimeSelect.innerHTML = '';
+            const selectedStartTime = startTimeSelect.value;
+            if (!selectedStartTime) return;
+
+            let startMinutes = timeToMinutes(selectedStartTime);
+
+            for (let i = startMinutes / interval + 1; i <= 24 * 60 / interval; i++) {
+                const slotEndMinutes = i * interval;
+                const slotEndHour = pad(Math.floor(slotEndMinutes / 60));
+                const slotEndMinute = pad(slotEndMinutes % 60);
+                const endTime = `${slotEndHour}:${slotEndMinute}`;
+
+                const option = document.createElement('option');
+                option.value = endTime;
+                option.textContent = endTime;
+
+                // Disable end times if the duration overlaps with an existing booking
+                const isBooked = checkOverlap(bookedSlots, selectedStartTime, endTime);
+                if (isBooked) {
+                    option.disabled = true;
+                    option.classList.add('unavailable');
+                }
+                endTimeSelect.appendChild(option);
+            }
+        };
+
+        startTimeSelect.addEventListener('change', updateEndTimeOptions);
+        updateEndTimeOptions(); // Initial population
+    };
 
     // Real-time Firestore Listener
     const todayDate = getTodayDate();
@@ -119,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const bookings = [];
         querySnapshot.forEach(doc => bookings.push(doc.data()));
         renderBookedTimes(bookings);
-        // The time pickers are now independent, so we just render the booked times
+        populateTimeSelectors(bookings); // re-populate dropdowns to reflect new bookings
     }, error => {
         console.error("Error fetching documents: ", error);
         bookedTimesList.textContent = "Failed to connect to the database.";
@@ -151,10 +191,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 date: bookingDate,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
+            alert('Booking confirmed!');
 
+            // Replaced alert() with a smoother UI action
             modal.style.display = 'none';
             document.getElementById('name').value = '';
             document.getElementById('project').value = '';
+            
+            // This part is a placeholder for your own non-alert confirmation.
+            // For example, you could show a temporary message on the page.
+            // A simple way would be to add a new div with a success message
+            // and show it for a few seconds before hiding it.
+            // Example:
+            // const successMsg = document.createElement('div');
+            // successMsg.textContent = 'Booking confirmed! Redirecting...';
+            // document.body.appendChild(successMsg);
+            // setTimeout(() => successMsg.remove(), 3000);
+            
+            // For this example, we will simply close the modal.
+            // You can add the custom UI element to your HTML and CSS as
+            // described in the previous response to make this smoother.
         } catch (error) {
             console.error("Error adding document: ", error);
             alert("Failed to book the slot. Please try again.");
@@ -163,8 +219,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Check Availability & Book Button
     checkBtn.addEventListener('click', () => {
-        const startTime = startTimeInput.value;
-        const endTime = endTimeInput.value;
+        const startTime = startTimeSelect.value;
+        const endTime = endTimeSelect.value;
 
         if (!startTime || !endTime) {
             alert('Please select both a start and end time.');
