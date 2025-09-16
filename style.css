@@ -144,7 +144,6 @@ label {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: relative;
 }
 
 .booked-slot strong {
@@ -175,7 +174,6 @@ label {
     color: #fff;
     padding: 4px 8px;
     border-radius: 4px;
-    margin-right: 10px; /* Spacing from the delete button */
 }
 
 .status-upcoming {
@@ -266,21 +264,6 @@ label {
     background-color: #219d52;
 }
 
-.delete-btn {
-    background-color: #e74c3c;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.9em;
-    transition: background-color 0.2s;
-}
-
-.delete-btn:hover {
-    background-color: #c0392b;
-}
-
 .hidden-message {
     text-align: center;
     color: green;
@@ -292,15 +275,6 @@ label {
 
 .visible-message {
     opacity: 1;
-}
-
-.booked-slot-info {
-    flex-grow: 1;
-}
-
-.booked-slot-actions {
-    display: flex;
-    align-items: center;
 }
 
 @media (min-width: 768px) {
