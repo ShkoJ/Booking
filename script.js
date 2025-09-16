@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    const bookingDateInput = document.getElementById('booking-date');
     const startTimeSelect = document.getElementById('start-time');
     const endTimeSelect = document.getElementById('end-time');
     const checkBtn = document.getElementById('check-availability-btn');
@@ -23,16 +24,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeBtn = document.querySelector('.close-btn');
 
     const bookingsCollection = db.collection('bookings');
+    let selectedDate = '';
+
+    // Initialize Flatpickr for the date picker
+    flatpickr(bookingDateInput, {
+        minDate: "today",
+        dateFormat: "Y-m-d",
+        onChange: (selectedDates, dateStr, instance) => {
+            selectedDate = dateStr;
+            fetchBookings(selectedDate);
+        }
+    });
 
     const pad = n => String(n).padStart(2, '0');
-
-    const getTodayDate = () => {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
 
     const timeToMinutes = (time) => {
         const [hourStr, minuteStr] = time.split(':').map(s => s.trim());
@@ -47,22 +51,30 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const isBookingDone = (endTime) => {
+        const now = new Date();
+        const todayDate = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate());
+        if (selectedDate !== todayDate) {
+            return false;
+        }
         return timeToMinutes(endTime) <= getCurrentMinutes();
     };
     
     const isBookingOngoing = (startTime, endTime) => {
+        const now = new Date();
+        const todayDate = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate());
+        if (selectedDate !== todayDate) {
+            return false;
+        }
         const currentMinutes = getCurrentMinutes();
         return timeToMinutes(startTime) <= currentMinutes && currentMinutes < timeToMinutes(endTime);
     };
 
-    // checks for overlap between a new slot and an existing booking
     const checkOverlap = (bookings, newStart, newEnd) => {
         const newStartMinutes = timeToMinutes(newStart);
         const newEndMinutes = timeToMinutes(newEnd);
         return bookings.some(booking => {
             const existingStartMinutes = timeToMinutes(booking.startTime);
             const existingEndMinutes = timeToMinutes(booking.endTime);
-            // Check for overlap using the AABB collision detection method
             return (newStartMinutes < existingEndMinutes) && (newEndMinutes > existingStartMinutes);
         });
     };
@@ -70,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderBookedTimes = (bookings) => {
         bookedTimesList.innerHTML = '';
         if (!bookings || bookings.length === 0) {
-            bookedTimesList.textContent = "No bookings for today. All clear!";
+            bookedTimesList.textContent = "No bookings for this date. All clear!";
             bookedTimesList.style.textAlign = 'center';
             return;
         }
@@ -98,9 +110,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     <strong>${booking.startTime} - ${booking.endTime}</strong>
                     <span>${booking.name} - ${booking.project}</span>
                 </div>
-                ${statusLabel}
+                <div>
+                    ${statusLabel}
+                    <button class="delete-btn" data-id="${booking.id}" data-email="${booking.email}">Delete</button>
+                </div>
             `;
             bookedTimesList.appendChild(bookedSlot);
+        });
+    };
+
+    const fetchBookings = (date) => {
+        if (!date) return;
+        bookingsCollection.where('date', '==', date).onSnapshot(querySnapshot => {
+            const bookings = [];
+            querySnapshot.forEach(doc => {
+                bookings.push({ ...doc.data(), id: doc.id });
+            });
+            renderBookedTimes(bookings);
+            populateTimeSelectors(bookings);
+        }, error => {
+            console.error("Error fetching documents: ", error);
+            bookedTimesList.textContent = "Failed to connect to the database.";
         });
     };
 
@@ -108,6 +138,8 @@ document.addEventListener('DOMContentLoaded', () => {
         startTimeSelect.innerHTML = '';
         endTimeSelect.innerHTML = '';
         const now = new Date();
+        const todayDate = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate());
+        const currentMinutes = getCurrentMinutes();
         const interval = 30; // 30-minute intervals
 
         // Start Time dropdown
@@ -121,8 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
             option.value = startTime;
             option.textContent = startTime;
 
-            // Disable past times and times that are currently booked
-            const isPast = slotStartMinutes <= now.getHours() * 60 + now.getMinutes();
+            const isPast = selectedDate === todayDate && slotStartMinutes <= currentMinutes;
             const isBooked = checkOverlap(bookedSlots, startTime, `${pad(Math.floor((slotStartMinutes + interval) / 60))}:${pad((slotStartMinutes + interval) % 60)}`);
 
             if (isPast || isBooked) {
@@ -159,20 +190,8 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         startTimeSelect.addEventListener('change', updateEndTimeOptions);
-        updateEndTimeOptions(); // Initial population
+        updateEndTimeOptions();
     };
-
-    // Real-time Firestore Listener
-    const todayDate = getTodayDate();
-    bookingsCollection.where('date', '==', todayDate).onSnapshot(querySnapshot => {
-        const bookings = [];
-        querySnapshot.forEach(doc => bookings.push(doc.data()));
-        renderBookedTimes(bookings);
-        populateTimeSelectors(bookings); // re-populate dropdowns to reflect new bookings
-    }, error => {
-        console.error("Error fetching documents: ", error);
-        bookedTimesList.textContent = "Failed to connect to the database.";
-    });
 
     // Handle Booking Confirmation from Modal
     bookingForm.addEventListener('submit', async (e) => {
@@ -183,10 +202,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const reminder = document.getElementById('reminder').value;
         const startTime = bookingForm.dataset.startTime;
         const endTime = bookingForm.dataset.endTime;
-        const bookingDate = getTodayDate();
+        const bookingDate = selectedDate;
+
+        if (!bookingDate) {
+            alert('Please select a date first.');
+            return;
+        }
 
         try {
-            const snapshot = await bookingsCollection.where('date', '==', todayDate).get();
+            const snapshot = await bookingsCollection.where('date', '==', bookingDate).get();
             const currentBookings = snapshot.docs.map(doc => doc.data());
             if (checkOverlap(currentBookings, startTime, endTime)) {
                 alert('This slot was just booked. Please choose another one.');
@@ -210,7 +234,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('project').value = '';
             document.getElementById('email').value = '';
             
-            // Show success message
             const successMessage = document.getElementById('success-message');
             successMessage.classList.add('visible-message');
             setTimeout(() => {
@@ -223,11 +246,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Handle Delete Button Click
+    bookedTimesList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('delete-btn')) {
+            const bookingId = e.target.dataset.id;
+            const email = e.target.dataset.email;
+            
+            // This is where you would send an email from a backend function.
+            // For now, this is a placeholder.
+            alert(`A cancellation confirmation email has been sent to ${email}. Please follow the instructions to confirm deletion.`);
+            // In a real application, you would make an API call to a Cloud Function here.
+            // Example:
+            // await fetch('YOUR_CLOUD_FUNCTION_URL/sendCancellationEmail', {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify({ bookingId: bookingId, recipientEmail: email })
+            // });
+        }
+    });
+
     // Check Availability & Book Button
     checkBtn.addEventListener('click', () => {
         const startTime = startTimeSelect.value;
         const endTime = endTimeSelect.value;
 
+        if (!selectedDate) {
+            alert('Please select a date first.');
+            return;
+        }
         if (!startTime || !endTime) {
             alert('Please select both a start and end time.');
             return;
@@ -241,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        modalTimeSlot.textContent = `Time: ${startTime} - ${endTime}`;
+        modalTimeSlot.textContent = `Time: ${startTime} - ${endTime} on ${selectedDate}`;
         bookingForm.dataset.startTime = startTime;
         bookingForm.dataset.endTime = endTime;
         modal.style.display = 'flex';
