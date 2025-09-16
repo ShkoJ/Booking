@@ -41,16 +41,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return hours * 60 + minutes;
     };
 
-    const isBookingDone = (endTime) => {
-        const nowMinutes = timeToMinutes(getCurrentTime());
-        return timeToMinutes(endTime) <= nowMinutes;
+    const getCurrentMinutes = () => {
+        const now = new Date();
+        return now.getHours() * 60 + now.getMinutes();
     };
 
-    const getCurrentTime = () => {
-        const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        return `${hours}:${minutes}`;
+    const isBookingDone = (endTime) => {
+        return timeToMinutes(endTime) <= getCurrentMinutes();
+    };
+    
+    const isBookingOngoing = (startTime, endTime) => {
+        const currentMinutes = getCurrentMinutes();
+        return timeToMinutes(startTime) <= currentMinutes && currentMinutes < timeToMinutes(endTime);
     };
 
     // checks for overlap between a new slot and an existing booking
@@ -78,15 +80,25 @@ document.addEventListener('DOMContentLoaded', () => {
         bookings.forEach(booking => {
             const bookedSlot = document.createElement('div');
             bookedSlot.classList.add('booked-slot');
-            if (isBookingDone(booking.endTime)) {
+            
+            let statusLabel = '';
+            if (isBookingOngoing(booking.startTime, booking.endTime)) {
+                bookedSlot.classList.add('ongoing');
+                statusLabel = '<span class="status-label status-ongoing">Ongoing</span>';
+            } else if (isBookingDone(booking.endTime)) {
                 bookedSlot.classList.add('done');
+                statusLabel = '<span class="status-label">Done</span>';
+            } else {
+                bookedSlot.classList.add('upcoming');
+                statusLabel = '<span class="status-label status-upcoming">Upcoming</span>';
             }
+
             bookedSlot.innerHTML = `
                 <div>
                     <strong>${booking.startTime} - ${booking.endTime}</strong>
                     <span>${booking.name} - ${booking.project}</span>
                 </div>
-                ${isBookingDone(booking.endTime) ? '<span>&#10003; Done</span>' : ''}
+                ${statusLabel}
             `;
             bookedTimesList.appendChild(bookedSlot);
         });
@@ -120,8 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
             startTimeSelect.appendChild(option);
         }
 
-        // End Time dropdown
-        // The end time options are dynamically populated based on the selected start time
         const updateEndTimeOptions = () => {
             endTimeSelect.innerHTML = '';
             const selectedStartTime = startTimeSelect.value;
@@ -139,7 +149,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 option.value = endTime;
                 option.textContent = endTime;
 
-                // Disable end times if the duration overlaps with an existing booking
                 const isBooked = checkOverlap(bookedSlots, selectedStartTime, endTime);
                 if (isBooked) {
                     option.disabled = true;
@@ -170,6 +179,8 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const name = document.getElementById('name').value;
         const project = document.getElementById('project').value;
+        const email = document.getElementById('email').value;
+        const reminder = document.getElementById('reminder').value;
         const startTime = bookingForm.dataset.startTime;
         const endTime = bookingForm.dataset.endTime;
         const bookingDate = getTodayDate();
@@ -186,31 +197,26 @@ document.addEventListener('DOMContentLoaded', () => {
             await bookingsCollection.add({
                 name: name,
                 project: project,
+                email: email,
+                reminder: reminder,
                 startTime: startTime,
                 endTime: endTime,
                 date: bookingDate,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
-            alert('Booking confirmed!');
 
-            // Replaced alert() with a smoother UI action
             modal.style.display = 'none';
             document.getElementById('name').value = '';
             document.getElementById('project').value = '';
+            document.getElementById('email').value = '';
             
-            // This part is a placeholder for your own non-alert confirmation.
-            // For example, you could show a temporary message on the page.
-            // A simple way would be to add a new div with a success message
-            // and show it for a few seconds before hiding it.
-            // Example:
-            // const successMsg = document.createElement('div');
-            // successMsg.textContent = 'Booking confirmed! Redirecting...';
-            // document.body.appendChild(successMsg);
-            // setTimeout(() => successMsg.remove(), 3000);
-            
-            // For this example, we will simply close the modal.
-            // You can add the custom UI element to your HTML and CSS as
-            // described in the previous response to make this smoother.
+            // Show success message
+            const successMessage = document.getElementById('success-message');
+            successMessage.classList.add('visible-message');
+            setTimeout(() => {
+                successMessage.classList.remove('visible-message');
+            }, 3000);
+
         } catch (error) {
             console.error("Error adding document: ", error);
             alert("Failed to book the slot. Please try again.");
