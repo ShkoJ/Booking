@@ -51,6 +51,20 @@ h2 {
     flex: 1;
 }
 
+.date-picker-group {
+    max-width: none;
+    margin-bottom: 20px;
+}
+
+#booking-date {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
 .time-selectors {
     display: flex;
     justify-content: center;
@@ -252,6 +266,21 @@ label {
 
 #booking-form button:hover {
     background-color: #219d52;
+}
+
+.delete-btn {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s;
+}
+
+.delete-btn:hover {
+    background-color: #c0392b;
 }
 
 .hidden-message {
