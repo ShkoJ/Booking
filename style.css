@@ -71,7 +71,8 @@ label {
     font-weight: bold;
 }
 
-.time-select {
+/* Change from .time-select to .time-input */
+.time-input { 
     width: 100%;
     padding: 10px;
     border: 1px solid #ccc;
