@@ -283,3 +283,7 @@ label {
         gap: 30px;
     }
 }
+.flatpickr-calendar {
+    z-index: 9999 !important;
+}
+
