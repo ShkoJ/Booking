@@ -141,6 +141,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentMinutes = getCurrentMinutes();
         const interval = 30; // 30-minute intervals
 
+        // Add 'Now' option if the selected date is today
+        if (selectedDate === todayDate) {
+            const nowHour = pad(now.getHours());
+            const nowMinute = pad(now.getMinutes());
+            const nowTime = `${nowHour}:${nowMinute}`;
+            
+            // Calculate end time for 'now' to check for overlap, e.g., 1 minute from now
+            const nowPlusOne = new Date(now.getTime() + 60000);
+            const checkEndTime = `${pad(nowPlusOne.getHours())}:${pad(nowPlusOne.getMinutes())}`;
+
+            const nowOption = document.createElement('option');
+            nowOption.value = nowTime;
+            nowOption.textContent = `Now (${nowTime})`;
+            nowOption.classList.add('now-option');
+            nowOption.dataset.now = "true";
+
+            // Check if 'Now' time slot is available
+            const isNowBooked = checkOverlap(bookedSlots, nowTime, checkEndTime);
+            if (isNowBooked) {
+                nowOption.disabled = true;
+                nowOption.classList.add('unavailable');
+                nowOption.textContent += ' (Unavailable)';
+            }
+            startTimeSelect.appendChild(nowOption);
+        }
+
         // Start Time dropdown
         for (let i = 0; i < 24 * 60 / interval; i++) {
             const slotStartMinutes = i * interval;
@@ -169,8 +195,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let startMinutes = timeToMinutes(selectedStartTime);
 
-            for (let i = startMinutes / interval + 1; i <= 24 * 60 / interval; i++) {
+            for (let i = Math.ceil(startMinutes / interval); i <= 24 * 60 / interval; i++) {
                 const slotEndMinutes = i * interval;
+                if (slotEndMinutes <= startMinutes) continue;
+
                 const slotEndHour = pad(Math.floor(slotEndMinutes / 60));
                 const slotEndMinute = pad(slotEndMinutes % 60);
                 const endTime = `${slotEndHour}:${slotEndMinute}`;
