@@ -287,3 +287,9 @@ label {
     z-index: 9999 !important;
 }
 
+.time-select option.now-option {
+    font-weight: bold;
+    color: #27ae60;
+    background-color: #e8f5e9;
+}
+
