@@ -306,3 +306,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+const fp = flatpickr(bookingDateInput, {
+    minDate: "today",
+    dateFormat: "Y-m-d",
+    onChange: (selectedDates, dateStr, instance) => {
+        selectedDate = dateStr;
+        fetchBookings(selectedDate);
+    }
+});
+// ... (your existing code)
+
+// Initialize Flatpickr for the date picker
+const fp = flatpickr(bookingDateInput, {
+    minDate: "today",
+    dateFormat: "Y-m-d",
+    onChange: (selectedDates, dateStr, instance) => {
+        selectedDate = dateStr;
+        fetchBookings(selectedDate);
+    }
+});
+
+// ---
+## The Change
+Immediately after initializing Flatpickr, add the following code to set the date to today.
+
+```javascript
+// Set the date input and selectedDate variable to today's date
+const today = new Date();
+fp.setDate(today);
+selectedDate = fp.formatDate(today, "Y-m-d");
+fetchBookings(selectedDate);
+
