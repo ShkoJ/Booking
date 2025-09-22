@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedDate = '';
 
     // Initialize Flatpickr for the date picker
-    const fp = flatpickr(bookingDateInput, {
+    flatpickr(bookingDateInput, {
         minDate: "today",
         dateFormat: "Y-m-d",
         onChange: (selectedDates, dateStr, instance) => {
@@ -35,12 +35,6 @@ document.addEventListener('DOMContentLoaded', () => {
             fetchBookings(selectedDate);
         }
     });
-
-    // Set the date input and selectedDate variable to today's date on load
-    const today = new Date();
-    fp.setDate(today);
-    selectedDate = fp.formatDate(today, "Y-m-d");
-    fetchBookings(selectedDate);
 
     const pad = n => String(n).padStart(2, '0');
 
@@ -64,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return timeToMinutes(endTime) <= getCurrentMinutes();
     };
-    
+
     const isBookingOngoing = (startTime, endTime) => {
         const now = new Date();
         const todayDate = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate());
@@ -98,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
         bookings.forEach(booking => {
             const bookedSlot = document.createElement('div');
             bookedSlot.classList.add('booked-slot');
-            
+
             let statusLabel = '';
             if (isBookingOngoing(booking.startTime, booking.endTime)) {
                 bookedSlot.classList.add('ongoing');
@@ -200,7 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!selectedStartTime) return;
 
             let startMinutes = timeToMinutes(selectedStartTime);
-
             for (let i = Math.ceil(startMinutes / interval); i <= 24 * 60 / interval; i++) {
                 const slotEndMinutes = i * interval;
                 if (slotEndMinutes <= startMinutes) continue;
@@ -261,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
             modal.style.display = 'none';
             document.getElementById('name').value = '';
             document.getElementById('project').value = '';
-            
+
             const successMessage = document.getElementById('success-message');
             successMessage.classList.add('visible-message');
             setTimeout(() => {
@@ -312,3 +305,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
