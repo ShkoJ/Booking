@@ -1,5 +1,5 @@
 body {
-    font-family: 'Inter', -apple-system, BlinkMacMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     background-color: #f0f2f5;
     color: #333;
     line-height: 1.6;
@@ -27,19 +27,20 @@ body {
 /* FIX: Centering the title on mobile now that the logo is gone */
 .header-section {
     display: flex;
-    flex-direction: column; /* Use column layout */
-    align-items: center; /* Center horizontally */
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
     gap: 10px;
-    margin-bottom: 20px;
-    text-align: center; /* Ensure all text content is centered */
+    /* ADJUSTMENT: Reduced this margin to decrease space below the title */
+    margin-bottom: 5px; 
+    text-align: center;
 }
 
 h1 {
     color: #2c3e50;
     margin: 0;
-    text-align: center; /* CRITICAL FIX: Ensures the text inside H1 is centered */
-    width: 100%; /* Ensure H1 takes up full width for proper centering */
+    text-align: center;
+    width: 100%;
 }
 
 h2 {
@@ -340,6 +341,14 @@ label {
         gap: 30px;
     }
 }
+
+/* Specific Mobile Padding Reduction for a tighter look */
+@media (max-width: 600px) {
+    body {
+        padding: 10px; /* Reduces overall white space around the container */
+    }
+}
+
 .flatpickr-calendar {
     z-index: 9999 !important;
 }
