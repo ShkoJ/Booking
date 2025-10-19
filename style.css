@@ -24,10 +24,30 @@ body {
     gap: 20px;
 }
 
-h1 {
+/* NEW: Centering the logo and title */
+.header-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px; /* Subtle space between logo and title */
+    margin-bottom: 20px;
     text-align: center;
+}
+
+/* NEW: Subtle logo styling */
+.header-logo {
+    width: 32px; /* Small size */
+    height: 32px;
+    border-radius: 50%; /* Circular shape for subtlety */
+    object-fit: cover;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); /* Very light shadow */
+    opacity: 0.95; /* Just slightly transparent */
+    transition: opacity 0.3s;
+}
+
+h1 {
     color: #2c3e50;
-    margin-top: 0;
+    margin: 0; /* Remove default margin for clean alignment */
 }
 
 h2 {
@@ -56,14 +76,13 @@ h2 {
     margin-bottom: 20px;
 }
 
-/* 🆕 New wrapper for input and button */
 .date-input-wrapper {
     display: flex;
     gap: 10px;
 }
 
 #booking-date {
-    flex-grow: 1; /* Allows date input to take up most of the space */
+    flex-grow: 1; 
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
@@ -71,10 +90,9 @@ h2 {
     cursor: pointer;
 }
 
-/* 🆕 Style for the new "Today" button */
 .today-btn {
     padding: 10px 15px;
-    background-color: #34495e; /* Darker color to differentiate from the main book button */
+    background-color: #34495e;
     color: white;
     border: none;
     border-radius: 5px;
@@ -82,14 +100,12 @@ h2 {
     font-size: 14px;
     font-weight: bold;
     transition: background-color 0.3s ease;
-    flex-shrink: 0; /* Prevents the button from shrinking */
+    flex-shrink: 0;
 }
 
 .today-btn:hover {
     background-color: #2c3e50;
 }
-/* 🆕 End new styles */
-
 
 .time-selectors {
     display: flex;
