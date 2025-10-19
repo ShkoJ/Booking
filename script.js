@@ -1,287 +1,368 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // ... (unchanged Firebase config and element definitions) ...
+    // ** IMPORTANT: Replace with your actual Firebase project config **
     const firebaseConfig = {
-        apiKey: "AIzaSyC4YfTWe9eLhPZs4LBTErkLW-boINPwfAY",
-        authDomain: "booking-fe2ea.firebaseapp.com",
-        projectId: "booking-fe2ea",
-        storageBucket: "booking-fe2ea.firebasestorage.app",
-        messagingSenderId: "532325286601",
-        appId: "1:532325286601:web:4fc3c64c70cf70c60c8318",
-        measurementId: "G-VJ6KKNZZ82"
+      apiKey: "AIzaSyC4YfTWe9eLhPZs4LBTErkLW-boINPwfAY",
+      authDomain: "booking-fe2ea.firebaseapp.com",
+      projectId: "booking-fe2ea",
+      storageBucket: "booking-fe2ea.firebasestorage.app",
+      messagingSenderId: "532325286601",
+      appId: "1:532325286601:web:4fc3c64c70cf70c60c8318",
+      measurementId: "G-VJ6KKNZZ82"
     };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // DOM Elements
-    const loginModal = document.getElementById('login-modal');
-    const mainApp = document.getElementById('main-app');
-    const loginForm = document.getElementById('login-form');
     const bookingDateInput = document.getElementById('booking-date');
     const startTimeSelect = document.getElementById('start-time');
     const endTimeSelect = document.getElementById('end-time');
     const checkBtn = document.getElementById('check-availability-btn');
     const bookedTimesList = document.getElementById('booked-times-list');
-    const bookingModal = document.getElementById('booking-modal');
-    const editModal = document.getElementById('edit-modal');
+    const modal = document.getElementById('booking-modal');
     const modalTimeSlot = document.getElementById('modal-time-slot');
-    const editTimeSlot = document.getElementById('edit-time-slot');
     const bookingForm = document.getElementById('booking-form');
-    const editForm = document.getElementById('edit-form');
-    const closeBtns = document.querySelectorAll('.close-btn');
-    const logoutBtn = document.getElementById('logout-btn');
-    const userInfo = document.getElementById('user-info');
+    const closeBtn = document.querySelector('.close-btn');
+
+    // New element reference
+    const deletePasswordInput = document.getElementById('delete-password');
 
     const bookingsCollection = db.collection('bookings');
-    let selectedDate = '', currentUser = null, editingId = null;
+    let selectedDate = '';
 
-    // LOGIN
-    loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const email = document.getElementById('user-email').value;
-        const pin = document.getElementById('user-pin').value;
-        
-        if (pin === '123456') {
-            currentUser = { email };
-            localStorage.setItem('meetingUser', JSON.stringify({ email }));
-            userInfo.textContent = email;
-            loginModal.style.display = 'none';
-            mainApp.style.display = 'block';
-            initApp();
-        } else {
-            alert('❌ Wrong PIN! (123456)');
+    // Initialize Flatpickr for the date picker
+    flatpickr(bookingDateInput, {
+        minDate: "today",
+        dateFormat: "Y-m-d",
+        onChange: (selectedDates, dateStr, instance) => {
+            selectedDate = dateStr;
+            fetchBookings(selectedDate);
         }
     });
 
-    // AUTO-LOGIN
-    const savedUser = localStorage.getItem('meetingUser');
-    if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        userInfo.textContent = currentUser.email;
-        loginModal.style.display = 'none';
-        mainApp.style.display = 'block';
-        initApp();
-    }
-
-    // FIXED LOGOUT
-    logoutBtn.addEventListener('click', () => {
-        localStorage.removeItem('meetingUser');
-        currentUser = null;
-        mainApp.style.display = 'none';
-        loginModal.style.display = 'flex';
-        document.getElementById('user-email').value = '';
-        document.getElementById('user-pin').value = '';
-        bookedTimesList.innerHTML = '<p>Please login to view bookings.</p>';
-    });
-
-    function initApp() {
-        flatpickr(bookingDateInput, {
-            minDate: "today", dateFormat: "Y-m-d",
-            onChange: (selectedDates, dateStr) => {
-                selectedDate = dateStr;
-                fetchBookings(selectedDate);
-            }
-        });
-        fetchBookings(new Date().toISOString().split('T')[0]);
-    }
-
     const pad = n => String(n).padStart(2, '0');
-    const timeToMinutes = time => { const [h, m] = time.split(':').map(s => s.trim()); return Number(h) * 60 + Number(m); };
-    const getCurrentMinutes = () => { const now = new Date(); return now.getHours() * 60 + now.getMinutes(); };
-    const isBookingDone = endTime => { const now = new Date(); const today = now.toISOString().split('T')[0]; if (selectedDate !== today) return false; return timeToMinutes(endTime) <= getCurrentMinutes(); };
-    const isBookingOngoing = (start, end) => { const now = new Date(); const today = now.toISOString().split('T')[0]; if (selectedDate !== today) return false; const current = getCurrentMinutes(); return timeToMinutes(start) <= current && current < timeToMinutes(end); };
-    const checkOverlap = (bookings, newStart, newEnd) => { const s1 = timeToMinutes(newStart), e1 = timeToMinutes(newEnd); return bookings.some(b => { const s2 = timeToMinutes(b.startTime), e2 = timeToMinutes(b.endTime); return s1 < e2 && e1 > s2; }); };
+
+    const timeToMinutes = (time) => {
+        const [hourStr, minuteStr] = time.split(':').map(s => s.trim());
+        const hours = Number(hourStr);
+        const minutes = Number(minuteStr);
+        return hours * 60 + minutes;
+    };
+
+    const getCurrentMinutes = () => {
+        const now = new Date();
+        return now.getHours() * 60 + now.getMinutes();
+    };
+
+    const isBookingDone = (endTime) => {
+        const now = new Date();
+        const todayDate = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate());
+        if (selectedDate !== todayDate) {
+            return false;
+        }
+        return timeToMinutes(endTime) <= getCurrentMinutes();
+    };
+
+    const isBookingOngoing = (startTime, endTime) => {
+        const now = new Date();
+        const todayDate = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate());
+        if (selectedDate !== todayDate) {
+            return false;
+        }
+        const currentMinutes = getCurrentMinutes();
+        return timeToMinutes(startTime) <= currentMinutes && currentMinutes < timeToMinutes(endTime);
+    };
+
+    const checkOverlap = (bookings, newStart, newEnd) => {
+        const newStartMinutes = timeToMinutes(newStart);
+        const newEndMinutes = timeToMinutes(newEnd);
+        return bookings.some(booking => {
+            const existingStartMinutes = timeToMinutes(booking.startTime);
+            const existingEndMinutes = timeToMinutes(booking.endTime);
+            return (newStartMinutes < existingEndMinutes) && (newEndMinutes > existingStartMinutes);
+        });
+    };
+
+    // --- New Deletion Functionality ---
+    const deleteBooking = async (bookingId, password) => {
+        if (password.length < 4) {
+            alert('Password must be at least 4 characters long.');
+            return;
+        }
+
+        try {
+            const docRef = bookingsCollection.doc(bookingId);
+            const doc = await docRef.get();
+
+            if (!doc.exists) {
+                alert('Booking not found.');
+                return;
+            }
+
+            const bookingData = doc.data();
+
+            // Simple password check (Note: In a real app, use hashing/authentication)
+            if (bookingData.deletePassword === password) {
+                await docRef.delete();
+                alert('Meeting successfully deleted!');
+            } else {
+                alert('Incorrect password. You cannot delete this meeting.');
+            }
+        } catch (error) {
+            console.error("Error deleting document: ", error);
+            alert("Failed to delete the booking. Please check the console for details.");
+        }
+    };
+    // ----------------------------------
 
     const renderBookedTimes = (bookings) => {
         bookedTimesList.innerHTML = '';
-        if (!bookings?.length) {
-            bookedTimesList.innerHTML = '<p>No bookings for this date. All clear!</p>';
+        if (!bookings || bookings.length === 0) {
+            bookedTimesList.textContent = "No bookings for this date. All clear!";
             bookedTimesList.style.textAlign = 'center';
             return;
         }
+
         bookings.sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+
         bookings.forEach(booking => {
-            const isOwner = booking.ownerEmail === currentUser.email;
             const bookedSlot = document.createElement('div');
-            bookedSlot.className = 'booked-slot';
-            
-            let status = '';
+            bookedSlot.classList.add('booked-slot');
+
+            let statusLabel = '';
             if (isBookingOngoing(booking.startTime, booking.endTime)) {
                 bookedSlot.classList.add('ongoing');
-                status = '<span class="status-label status-ongoing">Ongoing</span>';
+                statusLabel = '<span class="status-label status-ongoing">Ongoing</span>';
             } else if (isBookingDone(booking.endTime)) {
                 bookedSlot.classList.add('done');
-                status = '<span class="status-label">Done</span>';
+                statusLabel = '<span class="status-label">Done</span>';
             } else {
                 bookedSlot.classList.add('upcoming');
-                status = '<span class="status-label status-upcoming">Upcoming</span>';
+                statusLabel = '<span class="status-label status-upcoming">Upcoming</span>';
             }
 
             bookedSlot.innerHTML = `
                 <div>
                     <strong>${booking.startTime} - ${booking.endTime}</strong>
-                    <span>${booking.project}</span>
-                    ${isOwner ? `<br><small style="color:#27ae60">👤 Your meeting</small>` : ''}
+                    <span>${booking.name} - ${booking.project}</span>
                 </div>
                 <div>
-                    ${status}
-                    ${isOwner ? `
-                        <button class="edit-btn" data-id="${booking.id}" data-start="${booking.startTime}" data-end="${booking.endTime}" data-project="${booking.project}" data-date="${booking.date}">✏️</button>
-                        <button class="delete-btn" data-id="${booking.id}">🗑️</button>
-                    ` : ''}
+                    ${statusLabel}
+                    <button class="delete-btn" data-id="${booking.id}">&times;</button>
                 </div>
             `;
             bookedTimesList.appendChild(bookedSlot);
         });
-    };
-
-    const fetchBookings = date => {
-        if (!date) return;
-        bookingsCollection.where('date', '==', date).onSnapshot(snap => {
-            const bookings = snap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-            renderBookedTimes(bookings);
-            populateTimeSelectors(bookings);
+        
+        // Add event listener for the delete buttons
+        document.querySelectorAll('.delete-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const bookingId = e.target.dataset.id;
+                const passwordPrompt = prompt("Enter your deletion password to confirm:");
+                if (passwordPrompt !== null) { // User clicked OK/Cancel
+                    deleteBooking(bookingId, passwordPrompt.trim());
+                }
+            });
         });
     };
 
-    const populateTimeSelectors = (bookings) => {
-        [startTimeSelect, endTimeSelect].forEach(select => select.innerHTML = '');
-        const now = new Date();
-        const today = now.toISOString().split('T')[0];
-        const currentMinutes = getCurrentMinutes();
-        const interval = 30;
-
-        if (selectedDate === today) {
-            const nowTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-            const nowOption = new Option(`Now (${nowTime})`, nowTime);
-            nowOption.className = 'now-option';
-            if (checkOverlap(bookings, nowTime, `${pad(now.getHours())}:${pad(now.getMinutes() + 1)}`)) nowOption.disabled = true;
-            startTimeSelect.add(nowOption);
-        }
-
-        for (let i = 0; i < 24 * 60 / interval; i++) {
-            const mins = i * interval;
-            const time = `${pad(Math.floor(mins / 60))}:${pad(mins % 60)}`;
-            const option = new Option(time, time);
-            const isPast = selectedDate === today && mins <= currentMinutes;
-            const isBooked = checkOverlap(bookings, time, `${pad(Math.floor((mins + interval) / 60))}:${pad((mins + interval) % 60)}`);
-            if (isPast || isBooked) { option.disabled = true; option.className = 'unavailable'; }
-            startTimeSelect.add(option);
-        }
-
-        const updateEndTimes = () => {
-            endTimeSelect.innerHTML = '';
-            const start = startTimeSelect.value;
-            if (!start) return;
-            const startMins = timeToMinutes(start);
-            for (let i = Math.ceil(startMins / interval); i <= 24 * 60 / interval; i++) {
-                const mins = i * interval;
-                if (mins <= startMins) continue;
-                const time = `${pad(Math.floor(mins / 60))}:${pad(mins % 60)}`;
-                const option = new Option(time, time);
-                if (checkOverlap(bookings, start, time)) { option.disabled = true; option.className = 'unavailable'; }
-                endTimeSelect.add(option);
-            }
-        };
-        startTimeSelect.addEventListener('change', updateEndTimes);
-        updateEndTimes();
+    const fetchBookings = (date) => {
+        // ... (unchanged fetchBookings logic) ...
+        if (!date) return;
+        bookingsCollection.where('date', '==', date).onSnapshot(querySnapshot => {
+            const bookings = [];
+            querySnapshot.forEach(doc => {
+                bookings.push({ ...doc.data(), id: doc.id });
+            });
+            renderBookedTimes(bookings);
+            populateTimeSelectors(bookings);
+        }, error => {
+            console.error("Error fetching documents: ", error);
+            bookedTimesList.textContent = "Failed to connect to the database.";
+        });
     };
 
-    // BUTTONS
-    document.addEventListener('click', async e => {
-        if (e.target.classList.contains('delete-btn')) {
-            if (confirm('Delete your meeting?')) {
-                await bookingsCollection.doc(e.target.dataset.id).delete();
-                alert('✅ Deleted!');
-            }
-        }
-        if (e.target.classList.contains('edit-btn')) {
-            editingId = e.target.dataset.id;
-            const startTime = e.target.dataset.start;
-            const endTime = e.target.dataset.end;
-            const project = e.target.dataset.project;
-            const editDate = e.target.dataset.date;
-            
-            // Set date picker
-            bookingDateInput.value = editDate;
-            selectedDate = editDate;
-            fetchBookings(selectedDate);
-            
-            setTimeout(() => {
-                startTimeSelect.value = startTime;
-                endTimeSelect.value = endTime;
-                startTimeSelect.dispatchEvent(new Event('change'));
-            }, 500);
-            
-            document.getElementById('edit-project').value = project;
-            editTimeSlot.innerHTML = `<strong>${startTime} - ${endTime}</strong> on ${editDate}<br><small>Change time below & click Save</small>`;
-            editModal.style.display = 'flex';
-        }
-    });
+    const populateTimeSelectors = (bookedSlots) => {
+        // ... (unchanged populateTimeSelectors logic) ...
+        startTimeSelect.innerHTML = '';
+        endTimeSelect.innerHTML = '';
+        const now = new Date();
+        const todayDate = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate());
+        const currentMinutes = getCurrentMinutes();
+        const interval = 30; // 30-minute intervals
 
-    // NEW BOOKING
-    bookingForm.addEventListener('submit', async e => {
+        // Add 'Now' option if the selected date is today
+        if (selectedDate === todayDate) {
+            const nowHour = pad(now.getHours());
+            const nowMinute = pad(now.getMinutes());
+            const nowTime = `${nowHour}:${nowMinute}`;
+            
+            // Calculate end time for 'now' to check for overlap, e.g., 1 minute from now
+            const nowPlusOne = new Date(now.getTime() + 60000);
+            const checkEndTime = `${pad(nowPlusOne.getHours())}:${pad(nowPlusOne.getMinutes())}`;
+
+            const nowOption = document.createElement('option');
+            nowOption.value = nowTime;
+            nowOption.textContent = `Now (${nowTime})`;
+            nowOption.classList.add('now-option');
+            nowOption.dataset.now = "true";
+
+            // Check if 'Now' time slot is available
+            const isNowBooked = checkOverlap(bookedSlots, nowTime, checkEndTime);
+            if (isNowBooked) {
+                nowOption.disabled = true;
+                nowOption.classList.add('unavailable');
+                nowOption.textContent += ' (Unavailable)';
+            }
+            startTimeSelect.appendChild(nowOption);
+        }
+
+        // Start Time dropdown
+        for (let i = 0; i < 24 * 60 / interval; i++) {
+            const slotStartMinutes = i * interval;
+            const slotStartHour = pad(Math.floor(slotStartMinutes / 60));
+            const slotStartMinute = pad(slotStartMinutes % 60);
+            const startTime = `${slotStartHour}:${slotStartMinute}`;
+
+            const option = document.createElement('option');
+            option.value = startTime;
+            option.textContent = startTime;
+
+            const isPast = selectedDate === todayDate && slotStartMinutes <= currentMinutes;
+            const isBooked = checkOverlap(bookedSlots, startTime, `${pad(Math.floor((slotStartMinutes + interval) / 60))}:${pad((slotStartMinutes + interval) % 60)}`);
+
+            if (isPast || isBooked) {
+                option.disabled = true;
+                option.classList.add('unavailable');
+            }
+            startTimeSelect.appendChild(option);
+        }
+
+        const updateEndTimeOptions = () => {
+            endTimeSelect.innerHTML = '';
+            const selectedStartTime = startTimeSelect.value;
+            if (!selectedStartTime) return;
+
+            let startMinutes = timeToMinutes(selectedStartTime);
+            for (let i = Math.ceil(startMinutes / interval); i <= 24 * 60 / interval; i++) {
+                const slotEndMinutes = i * interval;
+                if (slotEndMinutes <= startMinutes) continue;
+
+                const slotEndHour = pad(Math.floor(slotEndMinutes / 60));
+                const slotEndMinute = pad(slotEndMinutes % 60);
+                const endTime = `${slotEndHour}:${slotEndMinute}`;
+
+                const option = document.createElement('option');
+                option.value = endTime;
+                option.textContent = endTime;
+
+                const isBooked = checkOverlap(bookedSlots, selectedStartTime, endTime);
+                if (isBooked) {
+                    option.disabled = true;
+                    option.classList.add('unavailable');
+                }
+                endTimeSelect.appendChild(option);
+            }
+        };
+
+        startTimeSelect.addEventListener('change', updateEndTimeOptions);
+        updateEndTimeOptions();
+    };
+
+    // Handle Booking Confirmation from Modal
+    bookingForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        const name = document.getElementById('name').value;
         const project = document.getElementById('project').value;
+        const deletePassword = deletePasswordInput.value; // Get the password
         const startTime = bookingForm.dataset.startTime;
         const endTime = bookingForm.dataset.endTime;
+        const bookingDate = selectedDate;
 
-        const snapshot = await bookingsCollection.where('date', '==', selectedDate).get();
-        if (checkOverlap(snapshot.docs.map(d => d.data()), startTime, endTime)) {
-            alert('Slot taken! Try another.');
+        if (!bookingDate) {
+            alert('Please select a date first.');
             return;
         }
 
-        await bookingsCollection.add({
-            ownerEmail: currentUser.email,
-            project, startTime, endTime, date: selectedDate,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        // Simple password validation check
+        if (deletePassword.length < 4) {
+            alert('Please enter a deletion password of at least 4 characters.');
+            return;
+        }
 
-        bookingModal.style.display = 'none';
-        document.getElementById('project').value = '';
-        document.getElementById('success-message').classList.add('visible-message');
-        setTimeout(() => document.getElementById('success-message').classList.remove('visible-message'), 3000);
+        try {
+            const snapshot = await bookingsCollection.where('date', '==', bookingDate).get();
+            const currentBookings = snapshot.docs.map(doc => doc.data());
+            if (checkOverlap(currentBookings, startTime, endTime)) {
+                alert('This slot was just booked. Please choose another one.');
+                modal.style.display = 'none';
+                return;
+            }
+
+            await bookingsCollection.add({
+                name: name,
+                project: project,
+                // --- Save the password with the booking ---
+                deletePassword: deletePassword, 
+                // ------------------------------------------
+                startTime: startTime,
+                endTime: endTime,
+                date: bookingDate,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            modal.style.display = 'none';
+            document.getElementById('name').value = '';
+            document.getElementById('project').value = '';
+            deletePasswordInput.value = ''; // Clear the password field
+
+            const successMessage = document.getElementById('success-message');
+            successMessage.classList.add('visible-message');
+            setTimeout(() => {
+                successMessage.classList.remove('visible-message');
+            }, 3000);
+
+        } catch (error) {
+            console.error("Error adding document: ", error);
+            alert("Failed to book the slot. Please try again.");
+        }
     });
 
-    // EDIT FORM
-    editForm.addEventListener('submit', async e => {
-        e.preventDefault();
-        const project = document.getElementById('edit-project').value;
+    // Check Availability & Book Button
+    checkBtn.addEventListener('click', () => {
         const startTime = startTimeSelect.value;
         const endTime = endTimeSelect.value;
 
-        const snapshot = await bookingsCollection.where('date', '==', selectedDate).get();
-        if (checkOverlap(snapshot.docs.map(d => d.data()), startTime, endTime)) {
-            alert('New time slot taken! Choose another.');
+        if (!selectedDate) {
+            alert('Please select a date first.');
+            return;
+        }
+        if (!startTime || !endTime) {
+            alert('Please select both a start and end time.');
             return;
         }
 
-        await bookingsCollection.doc(editingId).update({
-            project, startTime, endTime, date: selectedDate
-        });
+        const startMinutes = timeToMinutes(startTime);
+        const endMinutes = timeToMinutes(endTime);
 
-        editModal.style.display = 'none';
-        alert('✅ Meeting updated!');
-    });
-
-    checkBtn.addEventListener('click', () => {
-        const start = startTimeSelect.value, end = endTimeSelect.value;
-        if (!selectedDate || !start || !end || timeToMinutes(end) <= timeToMinutes(start)) {
-            alert('Please select valid date/time.');
+        if (endMinutes <= startMinutes) {
+            alert('End time must be after start time.');
             return;
         }
-        modalTimeSlot.textContent = `${start} - ${end} on ${selectedDate}`;
-        bookingForm.dataset.startTime = start;
-        bookingForm.dataset.endTime = end;
-        bookingModal.style.display = 'flex';
+
+        modalTimeSlot.textContent = `Time: ${startTime} - ${endTime} on ${selectedDate}`;
+        bookingForm.dataset.startTime = startTime;
+        bookingForm.dataset.endTime = endTime;
+        modal.style.display = 'flex';
     });
 
-    closeBtns.forEach(btn => btn.addEventListener('click', () => {
-        bookingModal.style.display = 'none';
-        editModal.style.display = 'none';
-    }));
-    window.addEventListener('click', e => {
-        if (e.target === bookingModal) bookingModal.style.display = 'none';
-        if (e.target === editModal) editModal.style.display = 'none';
+    // Modal Control
+    closeBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+        }
     });
 });
