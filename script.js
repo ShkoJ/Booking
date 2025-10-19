@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // ... (unchanged Firebase config and element definitions) ...
     // ** IMPORTANT: Replace with your actual Firebase project config **
     const firebaseConfig = {
       apiKey: "AIzaSyC4YfTWe9eLhPZs4LBTErkLW-boINPwfAY",
@@ -23,15 +22,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalTimeSlot = document.getElementById('modal-time-slot');
     const bookingForm = document.getElementById('booking-form');
     const closeBtn = document.querySelector('.close-btn');
-
-    // New element reference
     const deletePasswordInput = document.getElementById('delete-password');
+    // 🆕 New button reference
+    const todayBtn = document.getElementById('today-btn');
 
     const bookingsCollection = db.collection('bookings');
     let selectedDate = '';
+    // 🆕 Variable to hold the Flatpickr instance
+    let datePickerInstance; 
 
     // Initialize Flatpickr for the date picker
-    flatpickr(bookingDateInput, {
+    datePickerInstance = flatpickr(bookingDateInput, { // Save the instance
         minDate: "today",
         dateFormat: "Y-m-d",
         onChange: (selectedDates, dateStr, instance) => {
@@ -83,7 +84,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // --- New Deletion Functionality ---
     const deleteBooking = async (bookingId, password) => {
         if (password.length < 4) {
             alert('Password must be at least 4 characters long.');
@@ -113,7 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("Failed to delete the booking. Please check the console for details.");
         }
     };
-    // ----------------------------------
 
     const renderBookedTimes = (bookings) => {
         bookedTimesList.innerHTML = '';
@@ -167,7 +166,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const fetchBookings = (date) => {
-        // ... (unchanged fetchBookings logic) ...
         if (!date) return;
         bookingsCollection.where('date', '==', date).onSnapshot(querySnapshot => {
             const bookings = [];
@@ -183,7 +181,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const populateTimeSelectors = (bookedSlots) => {
-        // ... (unchanged populateTimeSelectors logic) ...
         startTimeSelect.innerHTML = '';
         endTimeSelect.innerHTML = '';
         const now = new Date();
@@ -268,6 +265,12 @@ document.addEventListener('DOMContentLoaded', () => {
         startTimeSelect.addEventListener('change', updateEndTimeOptions);
         updateEndTimeOptions();
     };
+
+    // 🆕 Event Listener for the 'Today' button
+    todayBtn.addEventListener('click', () => {
+        // Set the date input to the current date and trigger the change handler
+        datePickerInstance.setDate('today', true);
+    });
 
     // Handle Booking Confirmation from Modal
     bookingForm.addEventListener('submit', async (e) => {
