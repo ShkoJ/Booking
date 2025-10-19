@@ -277,19 +277,37 @@ label {
     opacity: 1;
 }
 
+/* NEW STYLES - ONLY FOR LOGIN/LOGOUT/BUTTONS */
+.header-section > div { 
+    position: absolute; right: 20px; top: 20px; 
+    display: flex; align-items: center; gap: 10px;
+}
+#user-info { color:#3498db; font-weight:bold; font-size:14px; }
+#logout-btn { 
+    background:#e74c3c; color:white; border:none; padding:6px 12px; 
+    border-radius:5px; cursor:pointer; font-size:12px; 
+}
+#logout-btn:hover { background:#c0392b; }
+#user-pin { letter-spacing:5px; font-size:18px; text-align:center; }
+.edit-btn, .delete-btn {
+    border: none; border-radius: 50%; width: 30px; height: 30px;
+    margin-left: 5px; cursor: pointer; font-size: 14px;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.edit-btn { background: #f39c12; color: white; }
+.delete-btn { background: #e74c3c; color: white; }
+.edit-btn:hover { background: #e67e22; }
+.delete-btn:hover { background: #c0392b; }
+
 @media (min-width: 768px) {
     .content-wrapper {
         flex-direction: row;
         gap: 30px;
     }
 }
-.flatpickr-calendar {
-    z-index: 9999 !important;
-}
 
-.time-select option.now-option {
-    font-weight: bold;
-    color: #27ae60;
-    background-color: #e8f5e9;
+@media (max-width:480px) {
+    .time-selectors { flex-direction:column; gap:10px; }
+    .form-group { max-width:100% !important; }
+    .edit-btn, .delete-btn { width: 35px; height: 35px; font-size: 16px; }
 }
-
