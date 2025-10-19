@@ -19,7 +19,10 @@
                 <h2>Select Date & Time</h2>
                 <div class="form-group date-picker-group">
                     <label for="booking-date">Select Date:</label>
-                    <input type="text" id="booking-date" class="form-control" placeholder="Select a date...">
+                    <div class="date-input-wrapper">
+                        <input type="text" id="booking-date" class="form-control" placeholder="Select a date...">
+                        <button id="today-btn" class="today-btn">Today</button>
+                    </div>
                 </div>
                 <div class="time-selectors">
                     <div class="form-group">
@@ -31,7 +34,7 @@
                         <select id="end-time" class="time-select"></select>
                     </div>
                 </div>
-                <button id="check-availability-btn" class="book-btn">Book a Meeting</button>
+                <button id="check-availability-btn" class="book-btn">Check Availability & Book</button>
             </div>
 
             <div class="booked-times-section">
@@ -72,4 +75,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
