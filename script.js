@@ -23,12 +23,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const bookingForm = document.getElementById('booking-form');
     const closeBtn = document.querySelector('.close-btn');
     const deletePasswordInput = document.getElementById('delete-password');
-    // 🆕 New button reference
     const todayBtn = document.getElementById('today-btn');
 
     const bookingsCollection = db.collection('bookings');
     let selectedDate = '';
-    // 🆕 Variable to hold the Flatpickr instance
     let datePickerInstance; 
 
     // Initialize Flatpickr for the date picker
@@ -266,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateEndTimeOptions();
     };
 
-    // 🆕 Event Listener for the 'Today' button
+    // Event Listener for the 'Today' button
     todayBtn.addEventListener('click', () => {
         // Set the date input to the current date and trigger the change handler
         datePickerInstance.setDate('today', true);
