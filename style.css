@@ -292,7 +292,7 @@ label {
 #booking-form {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 16px;
 }
 
 #booking-form input,
@@ -358,3 +358,4 @@ label {
     color: #27ae60;
     background-color: #e8f5e9;
 }
+
